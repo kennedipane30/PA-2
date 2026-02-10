@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Admin\GaleriController; // 1. Tambahkan Import ini
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +22,9 @@ Route::post('/login', [AuthController::class, 'login']);
 // Login Step 2: Verifikasi OTP untuk mendapatkan Token
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 
+// Galeri: Agar siswa bisa melihat foto kegiatan di Beranda Mobile tanpa login
+Route::get('/galeri', [GaleriController::class, 'apiIndex']);
+
 
 // --- 2. ROUTE PROTECTED (Wajib bawa Token / auth:sanctum) ---
 
@@ -35,16 +39,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
 
-    // --- 3. ROUTE KHUSUS ROLE (Opsional - Jika sudah setup Middleware Role) ---
+    // --- 3. ROUTE KHUSUS ROLE ---
 
-    // Contoh Group khusus Admin
-    Route::middleware('role:admin')->group(function () {
-        // Route::get('/admin/stats', [AdminController::class, 'stats']);
+    // Group khusus Siswa (Akses dari Mobile)
+    Route::middleware('role:siswa')->group(function () {
+        // Nanti di sini kita tambah route pendaftaran kelas & tryout
     });
 
-    // Contoh Group khusus Siswa
-    Route::middleware('role:siswa')->group(function () {
-        // Route::get('/siswa/my-courses', [CourseController::class, 'myCourses']);
+    // Group khusus Admin (Jika sewaktu-waktu ada fitur admin di mobile)
+    Route::middleware('role:admin')->group(function () {
+        // Route::get('/admin/stats', [AdminController::class, 'stats']);
     });
 
 });

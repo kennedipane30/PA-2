@@ -15,4 +15,19 @@ class AuthService {
   static Future<http.Response> verifyOtp(String email, String otp) async {
     return await http.post(Uri.parse('$baseUrl/verify-otp'), headers: {'Accept': 'application/json'}, body: {'email': email, 'otp': otp});
   }
+
+  static Future<Map<String, dynamic>?> getUserProfile(String token) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/user'),
+    headers: {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token', // Kirim token agar server kenal siapa kita
+    },
+  );
+
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  }
+  return null;
+}
 }

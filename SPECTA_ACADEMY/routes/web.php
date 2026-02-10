@@ -3,8 +3,10 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\WebAuthController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\GaleriController; // Pastikan ini di folder Admin
 use App\Http\Controllers\Admin\PembayaranController;
 use App\Http\Controllers\Admin\ManajemenSiswaController;
+use App\Http\Controllers\Admin\PengumumanController;
 use App\Http\Controllers\Pengajar\PengajarDashboardController;
 use App\Http\Controllers\Pengajar\MateriController;
 use App\Http\Controllers\Pengajar\TryoutController;
@@ -28,16 +30,20 @@ Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
 // --- 2. GROUP ADMINISTRASI (Role: admin, Prefix: /admin) ---
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
 
-    // Dashboard & Informasi Utama
+    // Dashboard
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-    Route::get('/galeri', [AdminDashboardController::class, 'galeri'])->name('galeri');
     Route::get('/pengumuman', [AdminDashboardController::class, 'pengumuman'])->name('pengumuman');
+
+    // MANAJEMEN GALERI (SUDAH DIPINDAHKAN KE SINI)
+    Route::get('/galeri', [GaleriController::class, 'index'])->name('galeri.index');
+    Route::post('/galeri', [GaleriController::class, 'store'])->name('galeri.store');
+    Route::delete('/galeri/{id}', [GaleriController::class, 'destroy'])->name('galeri.destroy');
 
     // Manajemen Siswa & Kelas
     Route::get('/siswa', [ManajemenSiswaController::class, 'index'])->name('siswa.index');
     Route::get('/siswa/kelas', [ManajemenSiswaController::class, 'kelolaKelas'])->name('siswa.kelas');
 
-    // Manajemen Keuangan & Marketing
+    // Manajemen Keuangan
     Route::get('/pembayaran', [PembayaranController::class, 'index'])->name('pembayaran.index');
     Route::post('/pembayaran/verifikasi/{id}', [PembayaranController::class, 'verifikasi'])->name('pembayaran.verify');
     Route::get('/promo', [PembayaranController::class, 'promo'])->name('promo');
@@ -58,4 +64,6 @@ Route::middleware(['auth', 'role:pengajar'])->prefix('pengajar')->name('pengajar
     // Evaluasi & Tryout
     Route::get('/soal-tryout', [TryoutController::class, 'buatSoal'])->name('tryout.create');
     Route::get('/nilai', [TryoutController::class, 'lihatNilai'])->name('tryout.nilai');
+
+    // (Galeri di sini dihapus karena sudah jadi tugas Admin)
 });

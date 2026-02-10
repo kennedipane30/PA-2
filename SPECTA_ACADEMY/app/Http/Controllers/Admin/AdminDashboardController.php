@@ -19,11 +19,13 @@ class AdminDashboardController extends Controller
 
     public function galeri()
     {
-        return view('admin.galeri'); // Pastikan file resources/views/admin/galeri.blade.php ada
+        // Diperbaiki: diarahkan ke folder admin -> folder galeri -> file index
+        return view('admin.galeri.index');
     }
 
     public function pengumuman()
     {
-        return view('admin.pengumuman');
+        // Diperbaiki: diarahkan ke folder admin -> folder pengumuman -> file index
+        return view('admin.pengumuman.index');
     }
 }
