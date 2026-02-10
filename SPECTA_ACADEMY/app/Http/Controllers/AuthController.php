@@ -59,22 +59,50 @@ class AuthController extends Controller {
         return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
     }
 }
-    public function login(Request $request) {
-        $user = User::where('email', $request->email)->with('profile')->first();
-        if (!$user || !Hash::check($request->password, $user->password)) return response()->json(['message' => 'Akun tidak ditemukan'], 401);
+public function login(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'email' => 'required|email',
+        'password' => 'required',
+    ]);
 
-        $otp = rand(100000, 999999);
-        OtpCode::updateOrCreate(['user_id' => $user->id], ['otp' => $otp, 'valid_until' => Carbon::now()->addMinutes(5)]);
-
-        $nomor_wa = str_starts_with($user->profile->nomor_wa, '0') ? '62' . substr($user->profile->nomor_wa, 1) : $user->profile->nomor_wa;
-
-        Http::withHeaders(['Authorization' => env('FONNTE_TOKEN')])->post('https://api.fonnte.com/send', [
-            'target' => $nomor_wa,
-            'message' => "KODE OTP SPEKTA: *$otp*. Rahasiakan kode ini.",
-        ]);
-
-        return response()->json(['status' => 'success', 'message' => 'OTP terkirim', 'otp_test' => $otp]);
+    if ($validator->fails()) {
+        return response()->json(['status' => 'error', 'message' => 'Input tidak valid'], 422);
     }
+
+    $user = User::where('email', $request->email)->first();
+
+    if (!$user || !Hash::check($request->password, $user->password)) {
+        return response()->json(['status' => 'error', 'message' => 'Gmail atau Password salah'], 401);
+    }
+
+    // 1. Generate OTP
+    $otp = rand(100000, 999999);
+
+    // 2. Simpan OTP ke Database (Tetap disimpan agar verifyOtp bisa ngecek)
+    OtpCode::updateOrCreate(
+        ['user_id' => $user->id],
+        [
+            'otp' => $otp,
+            'valid_until' => Carbon::now()->addMinutes(5)
+        ]
+    );
+
+    // 3. SIMULASI (Fonnte dinonaktifkan sementara)
+    /*
+    Http::withHeaders(['Authorization' => env('FONNTE_TOKEN')])->post('https://api.fonnte.com/send', [
+        'target' => $user->profile->nomor_wa,
+        'message' => "OTP Anda: $otp",
+    ]);
+    */
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Simulasi: OTP terkirim ke sistem',
+        'otp' => $otp, // Kita kirim kodenya ke HP agar kamu bisa copy-paste untuk tes
+        'email' => $user->email
+    ]);
+}
 
     public function verifyOtp(Request $request) {
         $user = User::where('email', $request->email)->first();
