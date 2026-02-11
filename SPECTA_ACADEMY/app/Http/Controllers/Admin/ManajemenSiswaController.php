@@ -1,24 +1,15 @@
 <?php
-
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Pengajar;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use Illuminate\Http\Request;
+use App\Models\Enrollment;
 
-class ManajemenSiswaController extends Controller
-{
-    public function index() {
-        $siswas = User::where('role_id', 3)->with('profile')->get();
-        return view('admin.siswa.index', compact('siswas'));
-    }
-
-    public function kelolaKelas() {
-        return view('admin.siswa.kelas'); // Manajemen daftar kelas (SD, SMP, SMA)
-    }
-
-    public function daftarkanSiswa(Request $request) {
-        // Logic untuk memasukkan siswa ke kelas tertentu (Enrollment)
-        return back()->with('success', 'Siswa berhasil dimasukkan ke kelas');
+class PengajarDashboardController extends Controller {
+    public function absensi() {
+        // Hanya ambil siswa yang statusnya 'aktif' (sudah diverifikasi admin)
+        $siswas = Enrollment::with('user', 'classModel')
+                            ->where('status', 'aktif')
+                            ->get();
+        return view('pengajar.absensi', compact('siswas'));
     }
 }

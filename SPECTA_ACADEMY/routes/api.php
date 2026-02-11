@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\Admin\GaleriController; // 1. Tambahkan Import ini
+use App\Http\Controllers\Admin\GaleriController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -11,44 +11,43 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// --- 1. ROUTE PUBLIC (Bisa diakses tanpa login) ---
+// --- 1. ROUTE PUBLIC (Bisa diakses sebelum login) ---
 
-// Registrasi Siswa baru
+// Autentikasi
 Route::post('/register', [AuthController::class, 'registerSiswa']);
-
-// Login Step 1: Cek Email & Pass, lalu kirim OTP
 Route::post('/login', [AuthController::class, 'login']);
-
-// Login Step 2: Verifikasi OTP untuk mendapatkan Token
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 
-// Galeri: Agar siswa bisa melihat foto kegiatan di Beranda Mobile tanpa login
+// Galeri (Sudah terfilter 14 hari di Controller)
 Route::get('/galeri', [GaleriController::class, 'apiIndex']);
 
+// Ambil Daftar 4 Program Spekta (Untuk ditampilkan di Home Flutter)
+// Route::get('/programs', [ClassController::class, 'index']);
 
-// --- 2. ROUTE PROTECTED (Wajib bawa Token / auth:sanctum) ---
+
+// --- 2. ROUTE PROTECTED (Wajib Login / Bawa Token Sanctum) ---
 
 Route::middleware('auth:sanctum')->group(function () {
 
-    // Ambil data user yang sedang login beserta Role dan Profilnya
+    // Ambil data profil lengkap siswa yang login
     Route::get('/user', function (Request $request) {
         return $request->user()->load('role', 'profile');
     });
 
-    // Logout: Menghapus Token yang sedang digunakan
     Route::post('/logout', [AuthController::class, 'logout']);
 
 
-    // --- 3. ROUTE KHUSUS ROLE ---
-
-    // Group khusus Siswa (Akses dari Mobile)
+    // --- 3. ROUTE KHUSUS SISWA (Akses Fitur Akademik) ---
     Route::middleware('role:siswa')->group(function () {
-        // Nanti di sini kita tambah route pendaftaran kelas & tryout
-    });
 
-    // Group khusus Admin (Jika sewaktu-waktu ada fitur admin di mobile)
-    Route::middleware('role:admin')->group(function () {
-        // Route::get('/admin/stats', [AdminController::class, 'stats']);
+        // Cek apakah siswa sudah punya akses/aktif di kelas tertentu
+        Route::post('/class/check-status', [AuthController::class, 'checkClassStatus']);
+
+        // Siswa klik tombol "Daftar Sekarang" di Mobile
+        Route::post('/class/join', [AuthController::class, 'joinClass']);
+
+        // Nanti di sini kita tambah route:
+        // Route::get('/materi/{class_id}', [MateriController::class, 'apiIndex']);
     });
 
 });

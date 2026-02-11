@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import 'main_screen.dart'; // Import MainScreen
-import 'dart:convert'; // Untuk decode JSON
+import 'main_screen.dart'; 
+import 'dart:convert'; 
 
 class OtpPage extends StatelessWidget {
   final String email;
@@ -12,7 +12,6 @@ class OtpPage extends StatelessWidget {
     final otpCtrl = TextEditingController();
     const Color spektaRed = Color(0xFF990000);
 
-    // FUNGSI VERIFIKASI
     void handleVerify() async {
       if (otpCtrl.text.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -21,7 +20,6 @@ class OtpPage extends StatelessWidget {
         return;
       }
 
-      // Tampilkan Loading
       showDialog(
         context: context, 
         barrierDismissible: false, 
@@ -30,20 +28,22 @@ class OtpPage extends StatelessWidget {
 
       var resp = await AuthService.verifyOtp(email, otpCtrl.text);
       
-      // Tutup Loading
-      Navigator.pop(context);
+      // Keamanan: Cek apakah context masih aktif setelah await (Syarat Kualitas Perangkat Lunak)
+      if (!context.mounted) return;
+      Navigator.pop(context); // Tutup Loading
 
       if (resp.statusCode == 200) {
-        // 1. Ambil data dari response Laravel
         final data = jsonDecode(resp.body);
         
-        // 2. Ambil nama user dari object user yang dikirim Laravel
         String nameFromDb = data['user']['name'] ?? "Siswa Spekta";
+        String tokenFromDb = data['token']; // AMBIL TOKEN DARI LARAVEL
 
-        // 3. Berhasil! Pindah ke MainScreen dan kirim Namanya
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => MainScreen(userName: nameFromDb)),
+          MaterialPageRoute(builder: (_) => MainScreen(
+            userName: nameFromDb, 
+            token: tokenFromDb // KIRIM TOKEN KE MAINSCREEN
+          )),
           (route) => false,
         );
       } else {
@@ -76,8 +76,6 @@ class OtpPage extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 40),
-            
-            // Input OTP
             TextField(
               controller: otpCtrl,
               textAlign: TextAlign.center,
@@ -86,15 +84,12 @@ class OtpPage extends StatelessWidget {
               style: const TextStyle(fontSize: 32, letterSpacing: 15, fontWeight: FontWeight.bold),
               decoration: InputDecoration(
                 hintText: "000000",
-                counterText: "", // Sembunyikan counter text
+                counterText: "", 
                 enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: spektaRed.withOpacity(0.3))),
                 focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: spektaRed, width: 2)),
               ),
             ),
-            
             const SizedBox(height: 50),
-            
-            // Tombol Verifikasi
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: spektaRed,
@@ -104,7 +99,6 @@ class OtpPage extends StatelessWidget {
               onPressed: handleVerify,
               child: const Text("VERIFIKASI SEKARANG", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
-            
             const SizedBox(height: 20),
             TextButton(
               onPressed: () => Navigator.pop(context),

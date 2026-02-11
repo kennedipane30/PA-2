@@ -5,8 +5,14 @@ import 'notifikasi_page.dart';
 import 'akun_page.dart';
 
 class MainScreen extends StatefulWidget {
-  final String userName; // Menerima nama dari Login/OTP
-  const MainScreen({super.key, required this.userName});
+  final String userName; 
+  final String token; // 1. Tambahkan variabel token di sini
+
+  const MainScreen({
+    super.key, 
+    required this.userName, 
+    required this.token // 2. Tambahkan ke constructor
+  });
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -20,9 +26,10 @@ class _MainScreenState extends State<MainScreen> {
   Widget _getBody() {
     switch (_selectedIndex) {
       case 0:
-        return HomePage(userName: widget.userName); // Kirim nama ke Home
+        return HomePage(userName: widget.userName);
       case 1:
-        return const KelasPage();
+        // 3. Sekarang token bisa dikirim ke KelasPage tanpa error
+        return KelasPage(token: widget.token); 
       case 2:
         return const NotifikasiPage();
       case 3:
