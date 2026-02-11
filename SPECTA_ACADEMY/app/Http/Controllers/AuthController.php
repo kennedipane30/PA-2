@@ -11,13 +11,13 @@ class AuthController extends Controller {
 
     public function registerSiswa(Request $request): JsonResponse {
         $v = Validator::make($request->all(), [
-            'name' => 'required',
+            'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
             'password' => ['required', 'confirmed', 'min:8', 'regex:/[A-Z]/', 'regex:/[0-9]/', 'regex:/[@$!%*#?&]/'],
             'tanggal_lahir' => 'required|date',
-            'alamat' => 'required',
-            'nomor_wa' => 'required',
-            'nomor_wa_ortu' => 'required'
+            'alamat' => 'required|string',
+            'nomor_wa' => 'required|string',
+            'nomor_wa_ortu' => 'required|string',
         ]);
 
         if ($v->fails()) return response()->json(['status' => 'error', 'message' => $v->errors()->first()], 422);
@@ -28,8 +28,8 @@ class AuthController extends Controller {
                 'name' => $request->name,
                 'email' => $request->email,
                 'phone' => $request->nomor_wa,
-                'password' => $request->password, // MODIFIKASI: Jangan pakai Hash::make (Double Hashing)
-                'role_id' => 3
+                'password' => bcrypt($request->password), // Bcrypt Manual
+                'role_id' => 3, // Role Siswa
             ]);
 
             Student::create([
@@ -37,7 +37,7 @@ class AuthController extends Controller {
                 'school' => $request->alamat,
                 'grade' => '12 IPA',
                 'dob' => $request->tanggal_lahir,
-                'wa_ortu' => $request->nomor_wa_ortu
+                'wa_ortu' => $request->nomor_wa_ortu,
             ]);
 
             DB::commit();
@@ -51,14 +51,13 @@ class AuthController extends Controller {
     public function login(Request $request): JsonResponse {
         $user = User::where('email', $request->email)->first();
 
-        // Debugging sederhana: cek email dulu
-        if (!$user) {
-            return response()->json(['status' => 'error', 'message' => 'Gmail tidak terdaftar'], 401);
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json(['status' => 'error', 'message' => 'Gmail atau Password Salah!'], 401);
         }
 
-        // Cek password
-        if (!Hash::check($request->password, $user->password)) {
-            return response()->json(['status' => 'error', 'message' => 'Password salah'], 401);
+        // Proteksi: Hanya Siswa (Role 3) yang boleh login di Mobile
+        if ($user->role_id != 3) {
+            return response()->json(['status' => 'error', 'message' => 'Hanya akun Siswa yang bisa login di sini!'], 403);
         }
 
         $otp = rand(100000, 999999);
@@ -67,25 +66,22 @@ class AuthController extends Controller {
             ['otp' => $otp, 'valid_until' => Carbon::now()->addMinutes(5)]
         );
 
-        return response()->json([
-            'status' => 'success',
-            'otp' => $otp,
-            'email' => $user->email
-        ]);
+        return response()->json(['status' => 'success', 'otp' => $otp, 'email' => $user->email]);
     }
 
     public function verifyOtp(Request $request): JsonResponse {
         $user = User::where('email', $request->email)->first();
-        if (!$user) return response()->json(['status' => 'error', 'message' => 'User hilang'], 404);
+        if (!$user) return response()->json(['status' => 'error', 'message' => 'User tidak ditemukan'], 404);
 
-        $otp = OtpCode::where('user_id', $user->usersID)
-                      ->where('otp', $request->otp)
-                      ->where('valid_until', '>', now())
-                      ->first();
+        $otpRecord = OtpCode::where('user_id', $user->usersID)
+                            ->where('otp', $request->otp)
+                            ->where('valid_until', '>', now())
+                            ->first();
 
-        if (!$otp) return response()->json(['status' => 'error', 'message' => 'OTP Salah/Kadaluarsa'], 401);
+        if (!$otpRecord) return response()->json(['status' => 'error', 'message' => 'Kode OTP Salah/Kadaluarsa'], 401);
 
-        $otp->delete();
+        $otpRecord->delete();
+
         return response()->json([
             'status' => 'success',
             'token' => $user->createToken('token')->plainTextToken,
@@ -93,7 +89,6 @@ class AuthController extends Controller {
         ]);
     }
 
-    // Fungsi checkClassStatus & joinClass tetap sama...
     public function checkClassStatus(Request $request): JsonResponse {
         $enroll = Enrollment::where('user_id', Auth::id())->where('class_id', $request->class_id)->first();
         return response()->json(['status' => $enroll ? $enroll->status : 'none']);
@@ -101,6 +96,6 @@ class AuthController extends Controller {
 
     public function joinClass(Request $request): JsonResponse {
         Enrollment::create(['user_id' => Auth::id(), 'class_id' => $request->class_id, 'status' => 'pending']);
-        return response()->json(['status' => 'success', 'message' => 'Menunggu Admin']);
+        return response()->json(['status' => 'success', 'message' => 'Menunggu verifikasi admin']);
     }
 }
