@@ -12,9 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('class_models', function (Blueprint $table) {
-            $table->id();
+            $table->id('class_modelsID');
             $table->string('nama_program');
-            $table->string('gambar'); // <--- PASTIKAN TULISANNYA 'gambar'
+            $table->string('gambar');
+            $table->integer('price')->default(900000);
             $table->timestamps();
         });
     }

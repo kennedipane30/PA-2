@@ -2,75 +2,38 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens; // 1. Tambahkan ini untuk API Token
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable; // 2. Gunakan HasApiTokens di sini
+    use HasApiTokens, HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    protected $primaryKey = 'usersID';
+
     protected $fillable = [
-        'name',
-        'email',
-        'role_id',
-        'password',
+        'name', 'email', 'phone', 'role_id', 'password',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
-        'password',
-        'remember_token',
+        'password', 'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            // 'password' => 'hashed',  <-- HAPUS ATAU KOMENTAR BARIS INI (PENTING!)
         ];
     }
 
-    // --- RELASI DATABASE (PENTING UNTUK PROJECT INI) ---
-
-    /**
-     * Relasi ke tabel Roles (Satu User punya satu Role)
-     */
-    public function role()
-    {
-        return $this->belongsTo(Role::class);
+    public function student() {
+        return $this->hasOne(Student::class, 'user_id', 'usersID');
     }
 
-    /**
-     * Relasi ke tabel Profiles (Satu User punya satu Profil detail)
-     */
-    public function profile()
-    {
-        return $this->hasOne(Profile::class);
-    }
-
-    /**
-     * Relasi ke tabel OtpCodes
-     */
-    public function otpCodes()
-    {
-        return $this->hasMany(OtpCode::class);
+    public function role() {
+        return $this->belongsTo(Role::class, 'role_id', 'rolesID');
     }
 }

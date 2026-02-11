@@ -14,8 +14,8 @@ class CheckRole
             return redirect('/login');
         }
 
-        // Cek apakah nama role user sama dengan parameter $role
-        if ($request->user()->role->nama_role !== $role) {
+        // MODIFIKASI: Cek menggunakan properti 'name' sesuai ERD
+        if ($request->user()->role->name !== $role) {
             abort(403, 'Akses ditolak!');
         }
 

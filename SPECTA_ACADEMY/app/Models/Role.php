@@ -6,5 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Role extends Model
 {
-    protected $fillable = ['nama_role'];
+    // MODIFIKASI: Beritahu Laravel nama PK sesuai ERD
+    protected $primaryKey = 'rolesID';
+
+    protected $fillable = ['name'];
 }

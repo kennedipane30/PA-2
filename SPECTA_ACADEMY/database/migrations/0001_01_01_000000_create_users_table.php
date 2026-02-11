@@ -6,36 +6,36 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        // 1. Buat tabel roles dulu (karena users butuh role_id)
+        // 1. BUAT TABEL ROLES DULU
         Schema::create('roles', function (Blueprint $table) {
-            $table->id();
-            $table->string('nama_role');
+            $table->id('rolesID'); // Sesuai ERD
+            $table->string('name');
             $table->timestamps();
         });
 
-        // 2. Buat tabel users bawaan
+        // 2. BUAT TABEL USERS
         Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('role_id')->constrained(); // Foreign key ke roles
+            $table->id('usersID'); // Sesuai ERD
+            $table->foreignId('role_id')->constrained('roles', 'rolesID'); // Mengunci ke rolesID
             $table->string('name');
             $table->string('email')->unique();
+            $table->string('phone');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();
         });
 
+        // 3. TABEL PASSWORD RESET
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
             $table->timestamp('created_at')->nullable();
         });
 
+        // 4. TABEL SESSIONS (PENTING AGAR TIDAK ERROR 500 LAGI)
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->foreignId('user_id')->nullable()->index();
@@ -46,16 +46,11 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        // PENTING: Urutan hapus harus benar.
-        // Hapus users dulu baru roles karena users punya foreign key ke roles.
         Schema::dropIfExists('sessions');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('users');
-        Schema::dropIfExists('roles'); // Tambahkan baris ini
+        Schema::dropIfExists('roles');
     }
 };
