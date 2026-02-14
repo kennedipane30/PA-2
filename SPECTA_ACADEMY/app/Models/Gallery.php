@@ -6,5 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Gallery extends Model
 {
-   protected $fillable = ['judul', 'foto', 'deskripsi'];
+    // Jika di ERD kamu PK-nya galleriesID, aktifkan baris bawah ini:
+    // protected $primaryKey = 'galleriesID';
+
+    protected $fillable = [
+        'judul',
+        'foto',
+        'deskripsi' // <--- PASTIKAN ADA DI SINI
+    ];
 }

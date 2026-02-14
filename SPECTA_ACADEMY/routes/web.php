@@ -41,7 +41,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // MANAJEMEN GALERI
     Route::get('/galeri', [GaleriController::class, 'index'])->name('galeri.index');
     Route::post('/galeri', [GaleriController::class, 'store'])->name('galeri.store');
-    Route::delete('/galeri/{id}', [GaleriController::class, 'destroy'])->name('galeri.destroy');
+    Route::get('/galeri/edit/{id}', [GaleriController::class, 'edit'])->name('galeri.edit'); // Rute Edit
+    Route::put('/galeri/update/{id}', [GaleriController::class, 'update'])->name('galeri.update'); // Rute Update
+    Route::delete('/galeri/hapus/{id}', [GaleriController::class, 'destroy'])->name('galeri.destroy'); // Rute Hapus
 
     // Manajemen Siswa & Verifikasi Pendaftaran Kelas (Fitur Inti yang tadi dibahas)
     // Route::get('/siswa', [ManajemenSiswaController::class, 'index'])->name('siswa.index');

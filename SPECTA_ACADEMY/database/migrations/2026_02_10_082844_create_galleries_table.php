@@ -9,14 +9,14 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-        public function up(): void
-
+    public function up(): void
     {
         Schema::create('galleries', function (Blueprint $table) {
-            $table->id();
+            $table->id(); // Ini akan jadi galleriesID jika mengikuti ERD kamu
             $table->string('judul');
             $table->string('foto');
-            $table->timestamps(); // created_at akan menjadi acuan 14 hari
+            $table->text('deskripsi')->nullable(); // <--- TAMBAHKAN BARIS INI
+            $table->timestamps();
         });
     }
 

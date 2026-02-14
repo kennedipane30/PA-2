@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'class_detail_page.dart';
 
 class KelasPage extends StatelessWidget {
-  final String token; // Token diperlukan untuk dikirim ke halaman detail
+  final String token; 
   const KelasPage({super.key, required this.token});
 
   final Color spektaRed = const Color(0xFF990000);
@@ -10,35 +10,35 @@ class KelasPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Data 4 Program Spekta sesuai gambar referensi
+    // Data 4 Program Spekta dengan Gambar Aset Lokal
     final List<Map<String, dynamic>> programs = [
       {
         "id": 1,
         "title": "Program Bimbingan Belajar",
         "name": "CALON\nABDI NEGARA",
-        "subtitle": "TNI-SEKDIN",
-        "image": "https://img.freepik.com/free-vector/gradient-educational-youtube-thumbnail_23-2148918231.jpg",
+        "subtitle": "TNI - POLRI - SEKDIN",
+        "image": "assets/images/abdi_negara.png", // MENGGUNAKAN ASET LOKAL
       },
       {
         "id": 2,
         "title": "Program Bimbingan Belajar",
         "name": "PTN &\nUNHAN",
-        "subtitle": "PERSIAPAN KAMPUS",
-        "image": "https://img.freepik.com/free-vector/flat-university-concept-background_23-2148184651.jpg",
+        "subtitle": "PERSIAPAN MASUK KAMPUS IMPIAN",
+        "image": "assets/images/ptn_unhan.png",
       },
       {
         "id": 3,
         "title": "Program Bimbingan Belajar",
         "name": "SMA & SMP\nREGULER",
-        "subtitle": "KURSUS HARIAN",
-        "image": "https://img.freepik.com/free-vector/children-reading-books_23-2147514138.jpg",
+        "subtitle": "KURSUS HARIAN SISWA",
+        "image": "assets/images/reguler.png",
       },
       {
         "id": 4,
         "title": "Program Bimbingan Belajar",
         "name": "SMA\nFAVORIT",
-        "subtitle": "UNGGULAN & ASRAMA",
-        "image": "https://img.freepik.com/free-vector/flat-design-back-school-background_23-2148601831.jpg",
+        "subtitle": "DEL - TN - MATAULI - SOPOSURUNG",
+        "image": "assets/images/favorit.png",
       },
     ];
 
@@ -63,7 +63,6 @@ class KelasPage extends StatelessWidget {
 
   Widget _buildProgramCard(BuildContext context, Map<String, dynamic> item) {
     return Container(
-      // PERBAIKAN: Menggunakan .only agar tidak eror
       margin: const EdgeInsets.only(bottom: 25),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -79,14 +78,21 @@ class KelasPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Gambar Banner Program
+          // Banner Program menggunakan Image.asset
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
-            child: Image.network(
+            child: Image.asset(
               item['image'],
-              height: 180,
+              height: 220, // Sedikit lebih tinggi agar gambar terlihat jelas
               width: double.infinity,
-              fit: BoxFit.cover,
+              fit: BoxFit.cover, // Agar gambar memenuhi area card
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  height: 220,
+                  color: Colors.grey[300],
+                  child: const Center(child: Text("Gambar tidak ditemukan\ndi assets/images/")),
+                );
+              },
             ),
           ),
           
@@ -105,7 +111,7 @@ class KelasPage extends StatelessWidget {
                 Text(item['subtitle'], style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 20),
                 
-                // Tombol Info Selengkapnya
+                // Tombol Navigasi
                 InkWell(
                   onTap: () {
                     Navigator.push(
