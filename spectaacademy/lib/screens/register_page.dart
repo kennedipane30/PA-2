@@ -1,93 +1,89 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import 'dart:convert'; // WAJIB ADA untuk membaca pesan error dari Laravel
+import 'otp_page.dart'; // Pastikan import ini benar
+import 'dart:convert';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
-  @override State<RegisterPage> createState() => _RegisterPageState();
+
+  @override
+  State<RegisterPage> createState() => _RegisterPageState();
 }
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
   final Color spektaRed = const Color(0xFF990000);
 
-  // Controllers
-  final TextEditingController _name = TextEditingController();
-  final TextEditingController _email = TextEditingController();
-  final TextEditingController _tgl = TextEditingController();
-  final TextEditingController _alamat = TextEditingController();
-  final TextEditingController _wa = TextEditingController();
-  final TextEditingController _waO = TextEditingController();
-  final TextEditingController _pass = TextEditingController();
-  final TextEditingController _conf = TextEditingController();
+  // Controllers (Hanya yang disepakati)
+  final TextEditingController _nameCtrl = TextEditingController();
+  final TextEditingController _emailCtrl = TextEditingController();
+  final TextEditingController _waCtrl = TextEditingController();
+  final TextEditingController _passCtrl = TextEditingController();
+  final TextEditingController _confirmPassCtrl = TextEditingController();
 
-  // VALIDASI PASSWORD (Syarat Keamanan Perangkat Lunak)
-  String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) return 'Password tidak boleh kosong';
-    if (value.length < 8) return 'Minimal 8 karakter';
-    
-    bool hasUppercase = value.contains(RegExp(r'[A-Z]'));
-    bool hasDigits = value.contains(RegExp(r'[0-9]'));
-    bool hasSpecialCharacters = value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
-
-    if (!hasUppercase) return 'Wajib ada 1 Huruf KAPITAL';
-    if (!hasDigits) return 'Wajib ada 1 ANGKA';
-    if (!hasSpecialCharacters) return 'Wajib ada 1 SIMBOL (!@# dll)';
-    
+  // 1. VALIDASI NAMA (Hanya Huruf & Spasi)
+  String? _validateName(String? value) {
+    if (value == null || value.isEmpty) return 'Nama wajib diisi';
+    if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
+      return 'Nama hanya boleh berisi huruf!';
+    }
     return null;
   }
 
-  // FUNGSI HANDLE REGISTER DENGAN PENANGANAN ERROR LENGKAP
+  // 2. VALIDASI PASSWORD (Kapital, Huruf Kecil, Angka, Simbol)
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) return 'Password wajib diisi';
+    if (value.length < 8) return 'Minimal 8 karakter';
+    
+    bool hasUppercase = value.contains(RegExp(r'[A-Z]'));
+    bool hasLowercase = value.contains(RegExp(r'[a-z]'));
+    bool hasDigits = value.contains(RegExp(r'[0-9]'));
+    bool hasSpecialCharacters = value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+
+    if (!hasUppercase || !hasLowercase || !hasDigits || !hasSpecialCharacters) {
+      return 'Wajib: Huruf Kapital, Kecil, Angka, & Simbol';
+    }
+    return null;
+  }
+
   void _handleRegister() async {
     if (_formKey.currentState!.validate()) {
-      // 1. Tampilkan Loading (Agar User tidak klik berkali-kali)
-      showDialog(
-        context: context, 
-        barrierDismissible: false, 
-        builder: (context) => const Center(child: CircularProgressIndicator(color: Color(0xFF990000)))
-      );
+      // Munculkan Loading
+      showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator(color: Color(0xFF990000))));
+
+      // Data yang dikirim ke Laravel
+      Map<String, dynamic> data = {
+        'name': _nameCtrl.text,
+        'email': _emailCtrl.text,
+        'nomor_wa': _waCtrl.text, // Tetap butuh WA untuk kirim OTP
+        'password': _passCtrl.text,
+        'password_confirmation': _confirmPassCtrl.text,
+      };
 
       try {
-        var response = await AuthService.register({
-          'name': _name.text,
-          'email': _email.text,
-          'tanggal_lahir': _tgl.text,
-          'alamat': _alamat.text,
-          'nomor_wa': _wa.text,
-          'nomor_wa_ortu': _waO.text,
-          'password': _pass.text,
-          'password_confirmation': _conf.text,
-        });
-
+        var response = await AuthService.register(data);
+        if (!mounted) return;
         Navigator.pop(context); // Tutup Loading
 
         if (response.statusCode == 201) {
-          // BERHASIL
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(backgroundColor: Colors.green, content: Text("Registrasi Berhasil! Silakan Login."))
+          final responseData = jsonDecode(response.body);
+          // BERHASIL -> PINDAH KE HALAMAN OTP
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => OtpPage(
+                name: _nameCtrl.text, 
+                otpSimulasi: responseData['otp'].toString()
+              ),
+            ),
           );
-          Navigator.pop(context); 
         } else {
-          // GAGAL - Ambil pesan error dari Laravel
-          final errorBody = jsonDecode(response.body);
-          String errorMessage = "Gagal Simpan";
-
-          if (errorBody['errors'] != null) {
-            // Ambil pesan error validasi pertama
-            errorMessage = errorBody['errors'].values.first[0];
-          } else {
-            errorMessage = errorBody['message'] ?? "Terjadi kesalahan server";
-          }
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(backgroundColor: Colors.red, content: Text("Gagal: $errorMessage"))
-          );
+          final errorData = jsonDecode(response.body);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text(errorData['message'] ?? "Registrasi Gagal")));
         }
       } catch (e) {
-        Navigator.pop(context); // Tutup Loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(backgroundColor: Colors.black, content: Text("Koneksi Error: Periksa apakah Server sudah menyala."))
-        );
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Koneksi Error!")));
       }
     }
   }
@@ -95,45 +91,48 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Registrasi Siswa Spekta"), backgroundColor: spektaRed, foregroundColor: Colors.white),
+      appBar: AppBar(
+        title: const Text("Registrasi Siswa Spekta"),
+        backgroundColor: spektaRed,
+        foregroundColor: Colors.white,
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(25),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
-              _buildField(_name, "Nama Lengkap", Icons.person),
-              _buildField(_email, "Gmail / Email", Icons.email),
-              _buildField(_tgl, "Tgl Lahir (Contoh: 2005-10-30)", Icons.calendar_today),
-              _buildField(_alamat, "Alamat Lengkap", Icons.map),
-              _buildField(_wa, "No HP Siswa (Contoh: 0822xxx)", Icons.phone_android),
-              _buildField(_waO, "No HP Orang Tua", Icons.family_restroom),
+              _buildInput(_nameCtrl, "Nama Lengkap", Icons.person, _validateName),
+              _buildInput(_emailCtrl, "Gmail / Email", Icons.email, (v) => v!.contains('@') ? null : "Gmail tidak valid"),
+              _buildInput(_waCtrl, "Nomor WhatsApp", Icons.phone_android, (v) => v!.length < 10 ? "Nomor tidak valid" : null),
               
+              // Input Password
               TextFormField(
-                controller: _pass,
+                controller: _passCtrl,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: "Password", icon: Icon(Icons.lock_outline)),
+                decoration: const InputDecoration(labelText: "Password", prefixIcon: Icon(Icons.lock_outline)),
                 validator: _validatePassword,
               ),
-              
+              const SizedBox(height: 15),
+
+              // Konfirmasi Password
               TextFormField(
-                controller: _conf,
+                controller: _confirmPassCtrl,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: "Konfirmasi Password", icon: Icon(Icons.lock)),
-                validator: (v) => v != _pass.text ? 'Password tidak cocok' : null,
+                decoration: const InputDecoration(labelText: "Konfirmasi Password", prefixIcon: Icon(Icons.lock)),
+                validator: (v) => v != _passCtrl.text ? 'Password tidak cocok' : null,
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 40),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: spektaRed, 
+                  backgroundColor: spektaRed,
                   minimumSize: const Size(double.infinity, 55),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))
                 ),
                 onPressed: _handleRegister,
                 child: const Text("DAFTAR SEKARANG", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),
-              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -141,13 +140,13 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget _buildField(TextEditingController ctrl, String label, IconData icon) {
+  Widget _buildInput(TextEditingController ctrl, String label, IconData icon, String? Function(String?)? validator) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 15),
       child: TextFormField(
         controller: ctrl,
-        decoration: InputDecoration(labelText: label, icon: Icon(icon)),
-        validator: (v) => v!.isEmpty ? '$label wajib diisi' : null,
+        decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
+        validator: validator,
       ),
     );
   }

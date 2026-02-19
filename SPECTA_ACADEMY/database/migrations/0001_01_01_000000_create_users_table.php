@@ -16,17 +16,17 @@ return new class extends Migration
         });
 
         // 2. BUAT TABEL USERS
-        Schema::create('users', function (Blueprint $table) {
-            $table->id('usersID'); // Sesuai ERD
-            $table->foreignId('role_id')->constrained('roles', 'rolesID'); // Mengunci ke rolesID
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->string('phone');
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->rememberToken();
-            $table->timestamps();
-        });
+// database/migrations/xxxx_create_users_table.php
+    Schema::create('users', function (Blueprint $table) {
+        $table->id('usersID');
+        $table->string('name')->unique(); // Nama unik untuk login
+        $table->string('email')->unique();
+        $table->string('phone');
+        $table->string('password');
+        $table->boolean('is_verified')->default(false); // Status Verifikasi
+        $table->foreignId('role_id')->constrained('roles', 'rolesID');
+        $table->timestamps();
+    });
 
         // 3. TABEL PASSWORD RESET
         Schema::create('password_reset_tokens', function (Blueprint $table) {

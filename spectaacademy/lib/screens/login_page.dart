@@ -1,130 +1,156 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import 'otp_page.dart';
-import 'register_page.dart';
-import 'dart:convert'; // Penting untuk membaca data dari API
+import 'register_page.dart'; // Import halaman register
+import 'main_screen.dart';   // Import halaman home
+import 'dart:convert';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Inisialisasi Controller & Warna
-    final TextEditingController emailCtrl = TextEditingController();
-    final TextEditingController passCtrl = TextEditingController();
-    const Color spektaRed = Color(0xFF990000);
+  State<LoginPage> createState() => _LoginPageState();
+}
 
-    // FUNGSI HANDLE LOGIN
-    void handleLogin() async {
-      // Validasi sederhana di sisi UI
-      if (emailCtrl.text.isEmpty || passCtrl.text.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Email dan Password tidak boleh kosong!"))
-        );
-        return;
-      }
+class _LoginPageState extends State<LoginPage> {
+  // Controller untuk mengambil data input
+  final TextEditingController nameCtrl = TextEditingController();
+  final TextEditingController passCtrl = TextEditingController();
+  final Color spektaRed = const Color(0xFF990000);
 
-      // Tampilkan Loading (Progress Indicator)
-      showDialog(
-        context: context, 
-        barrierDismissible: false, 
-        builder: (context) => const Center(child: CircularProgressIndicator(color: spektaRed))
+  // FUNGSI LOGIN (Hanya Nama & Password)
+  void handleLogin() async {
+    if (nameCtrl.text.isEmpty || passCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Nama dan Password wajib diisi!"))
       );
-
-      // Panggil API Laravel
-      var resp = await AuthService.login(emailCtrl.text, passCtrl.text);
-      
-      // Tutup Loading
-      Navigator.pop(context);
-
-      if (resp.statusCode == 200) {
-        // Ambil data OTP dari response (MODE SIMULASI)
-        final responseData = jsonDecode(resp.body);
-        String otpCode = responseData['otp'].toString();
-
-        // Tampilkan Dialog Kode OTP (Khusus masa pengerjaan, tidak untuk seminar)
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text("OTP SIMULASI (Dev Mode)"),
-            content: Text("Kode OTP Anda: $otpCode\n\n(Pesan ini muncul karena kita mematikan pengiriman WhatsApp Fonnte sementara)"),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Tutup dialog
-                  // Pindah ke Halaman OTP
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => OtpPage(email: emailCtrl.text)
-                  ));
-                },
-                child: const Text("LANJUTKAN", style: TextStyle(color: spektaRed, fontWeight: FontWeight.bold)),
-              )
-            ],
-          ),
-        );
-      } else {
-        // Jika login gagal (Email/Pass salah)
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(backgroundColor: Colors.red, content: Text("Gmail atau Password Salah!"))
-        );
-      }
+      return;
     }
 
+    // Tampilkan Loading
+    showDialog(
+      context: context, 
+      barrierDismissible: false, 
+      builder: (context) => const Center(child: CircularProgressIndicator(color: Color(0xFF990000)))
+    );
+
+    try {
+      // Panggil API Login (Sudah dimodifikasi di AuthService pakai Nama)
+      var resp = await AuthService.login(nameCtrl.text, passCtrl.text);
+      
+      if (!mounted) return;
+      Navigator.pop(context); // Tutup Loading
+
+      if (resp.statusCode == 200) {
+        final data = jsonDecode(resp.body);
+        
+        // LOGIN SUKSES -> LANGSUNG KE HOME
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => MainScreen(
+            userName: data['user']['name'], 
+            token: data['token']
+          )),
+          (route) => false,
+        );
+      } else {
+        final errorData = jsonDecode(resp.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(backgroundColor: Colors.red, content: Text(errorData['message'] ?? "Nama atau Password Salah!"))
+        );
+      }
+    } catch (e) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(backgroundColor: Colors.black, content: Text("Koneksi Error: Pastikan server Laravel menyala."))
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(35),
+        padding: const EdgeInsets.symmetric(horizontal: 35),
         child: Column(
           children: [
-            const SizedBox(height: 100),
-            // Logo / Judul Spekta
-            const Text("SPEKTA", style: TextStyle(fontSize: 45, fontWeight: FontWeight.bold, color: spektaRed, letterSpacing: 2)),
-            const Text("ACADEMY", style: TextStyle(fontSize: 14, letterSpacing: 8, color: Colors.grey)),
-            const SizedBox(height: 60),
+            const SizedBox(height: 120),
+            // Logo Spekta
+            const Text(
+              "SPEKTA ACADEMY",
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF990000),
+                letterSpacing: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 80),
 
-            // Input Email
+            // Input Nama Lengkap
             TextField(
-              controller: emailCtrl,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                labelText: "Gmail / Email",
-                prefixIcon: const Icon(Icons.email_outlined, color: spektaRed),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+              controller: nameCtrl,
+              decoration: const InputDecoration(
+                labelText: "Nama Lengkap",
+                prefixIcon: Icon(Icons.person, color: Colors.grey),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF990000))),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 25),
 
             // Input Password
             TextField(
               controller: passCtrl,
               obscureText: true,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: "Password",
-                prefixIcon: const Icon(Icons.lock_outline, color: spektaRed),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                prefixIcon: Icon(Icons.lock, color: Colors.grey),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF990000))),
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 50),
 
-            // Tombol Login
+            // Tombol MASUK
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: spektaRed,
                 minimumSize: const Size(double.infinity, 55),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                elevation: 5
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                elevation: 4,
               ),
               onPressed: handleLogin,
-              child: const Text("MASUK KE DASHBOARD", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text(
+                "MASUK",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 30),
 
-            // Tombol Ke Halaman Register
+            // Link ke Registrasi (Permintaanmu)
             TextButton(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterPage())),
-              child: const Text("Belum punya akun? Daftar Sekarang", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-            )
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const RegisterPage()),
+                );
+              },
+              child: RichText(
+                text: TextSpan(
+                  text: "Belum punya akun? ",
+                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                  children: [
+                    TextSpan(
+                      text: "Klik di sini untuk registrasi",
+                      style: TextStyle(color: spektaRed, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),

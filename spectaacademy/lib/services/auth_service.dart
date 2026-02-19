@@ -2,41 +2,52 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class AuthService {
-  // Gunakan 10.0.2.2 untuk Emulator Android, atau IP Laptop jika pakai HP Fisik
+  // Gunakan 10.0.2.2 untuk Emulator Android, atau IP asli Laptop jika pakai HP Fisik
   static const String baseUrl = 'http://10.0.2.2:8000/api';
 
   // 1. REGISTRASI SISWA
+  // Menerima data lengkap (Nama, Email, WA, Password, dll)
   static Future<http.Response> register(Map<String, dynamic> data) async {
     return await http.post(
       Uri.parse('$baseUrl/register'), 
-      headers: {
-        'Accept': 'application/json', // Penting agar error Laravel terbaca JSON
-      }, 
+      headers: {'Accept': 'application/json'}, 
       body: data
     );
   }
 
-  // 2. LOGIN (Step 1: Cek Password & Kirim OTP)
-  static Future<http.Response> login(String email, String password) async {
+  // 2. VERIFIKASI SETELAH PENDAFTARAN (Aktivasi Akun)
+  // Dipanggil di halaman OTP setelah siswa klik Daftar
+  static Future<http.Response> verifyRegistration(String name, String otp) async {
+    return await http.post(
+      Uri.parse('$baseUrl/verify-registration'), 
+      headers: {'Accept': 'application/json'}, 
+      body: {
+        'name': name, 
+        'otp': otp
+      }
+    );
+  }
+
+  // 3. LOGIN SISWA (Hanya Nama dan Password)
+  // MODIFIKASI: Menggunakan parameter 'name' sesuai bimbingan terbaru
+  static Future<http.Response> login(String name, String password) async {
     return await http.post(
       Uri.parse('$baseUrl/login'), 
-      headers: {
-        'Accept': 'application/json',
-      }, 
+      headers: {'Accept': 'application/json'}, 
       body: {
-        'email': email, 
+        'name': name,     // Menggunakan Nama Lengkap untuk login
         'password': password
       }
     );
   }
 
-  // 3. VERIFIKASI OTP (Step 2: Dapatkan Token)
+  // --- FUNGSI DI BAWAH INI TETAP UTUH SESUAI PERMINTAAN ---
+
+  // 4. VERIFIKASI OTP (Opsional - Jika masih dibutuhkan di alur lain)
   static Future<http.Response> verifyOtp(String email, String otp) async {
     return await http.post(
       Uri.parse('$baseUrl/verify-otp'), 
-      headers: {
-        'Accept': 'application/json',
-      }, 
+      headers: {'Accept': 'application/json'}, 
       body: {
         'email': email, 
         'otp': otp
@@ -44,13 +55,13 @@ class AuthService {
     );
   }
 
-  // 4. AMBIL PROFIL USER (Menggunakan Token Bearer)
+  // 5. AMBIL PROFIL USER (Menggunakan Token Bearer)
   static Future<Map<String, dynamic>?> getUserProfile(String token) async {
     final response = await http.get(
       Uri.parse('$baseUrl/user'),
       headers: {
         'Accept': 'application/json',
-        'Authorization': 'Bearer $token', // Membawa Token untuk melewati Middleware
+        'Authorization': 'Bearer $token',
       },
     );
 
@@ -60,9 +71,7 @@ class AuthService {
     return null;
   }
 
-  // --- FITUR PENDAFTARAN KELAS ---
-
-  // 5. CEK STATUS PENDAFTARAN KELAS
+  // 6. CEK STATUS PENDAFTARAN KELAS
   static Future<http.Response> checkClassStatus(int classId, String token) async {
     return await http.post(
       Uri.parse('$baseUrl/class/check-status'),
@@ -76,7 +85,7 @@ class AuthService {
     );
   }
 
-  // 6. DAFTARKAN SISWA KE KELAS
+  // 7. DAFTARKAN SISWA KE KELAS
   static Future<http.Response> joinClass(int classId, String token) async {
     return await http.post(
       Uri.parse('$baseUrl/class/join'),

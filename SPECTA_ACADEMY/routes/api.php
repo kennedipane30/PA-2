@@ -13,41 +13,42 @@ use Illuminate\Support\Facades\Route;
 
 // --- 1. ROUTE PUBLIC (Bisa diakses sebelum login) ---
 
-// Autentikasi
+// STEP 1: Registrasi Siswa Baru (Menerima Nama, Email, WA, Pass, Konf Pass)
 Route::post('/register', [AuthController::class, 'registerSiswa']);
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 
-// Galeri (Sudah terfilter 14 hari di Controller)
+// STEP 2: Verifikasi OTP setelah pendaftaran (Aktivasi Akun)
+Route::post('/verify-registration', [AuthController::class, 'verifyRegistration']);
+
+// STEP 3: Login (Hanya Nama dan Password - Akun harus is_verified = true)
+Route::post('/login', [AuthController::class, 'login']);
+
+
+// Galeri Spekta (Data difilter 14 hari di Controller)
 Route::get('/galeri', [GaleriController::class, 'apiIndex']);
 
-// Ambil Daftar 4 Program Spekta (Untuk ditampilkan di Home Flutter)
-// Route::get('/programs', [ClassController::class, 'index']);
 
-
-// --- 2. ROUTE PROTECTED (Wajib Login / Bawa Token Sanctum) ---
+// --- 2. ROUTE PROTECTED (Wajib bawa Token / auth:sanctum) ---
 
 Route::middleware('auth:sanctum')->group(function () {
 
-    // Ambil data profil lengkap siswa yang login
+    // Ambil data profil lengkap siswa yang login (Gunakan student sesuai ERD)
     Route::get('/user', function (Request $request) {
-        return $request->user()->load('role', 'profile');
+        return $request->user()->load('role', 'student');
     });
 
+    // Logout: Menghapus Token
     Route::post('/logout', [AuthController::class, 'logout']);
 
 
     // --- 3. ROUTE KHUSUS SISWA (Akses Fitur Akademik) ---
     Route::middleware('role:siswa')->group(function () {
 
-        // Cek apakah siswa sudah punya akses/aktif di kelas tertentu
+        // Cek status akses kelas (none/pending/aktif)
         Route::post('/class/check-status', [AuthController::class, 'checkClassStatus']);
 
-        // Siswa klik tombol "Daftar Sekarang" di Mobile
+        // Pendaftaran Kelas
         Route::post('/class/join', [AuthController::class, 'joinClass']);
 
-        // Nanti di sini kita tambah route:
-        // Route::get('/materi/{class_id}', [MateriController::class, 'apiIndex']);
     });
 
 });
