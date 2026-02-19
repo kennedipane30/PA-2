@@ -4,5 +4,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class Student extends Model {
     protected $primaryKey = 'studentsID'; // Beritahu Laravel PK-nya
-    protected $fillable = ['user_id', 'school', 'grade', 'dob', 'wa_ortu'];
+protected $fillable = ['user_id', 'parent_name', 'school', 'grade', 'dob', 'wa_ortu'];
 }

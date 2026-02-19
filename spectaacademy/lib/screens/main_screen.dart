@@ -6,12 +6,14 @@ import 'akun_page.dart';
 
 class MainScreen extends StatefulWidget {
   final String userName; 
-  final String token; // 1. Tambahkan variabel token di sini
+  final String token; 
+  final Map userProfileData; // 1. Tambahkan variabel Map untuk menampung data profil lengkap
 
   const MainScreen({
     super.key, 
     required this.userName, 
-    required this.token // 2. Tambahkan ke constructor
+    required this.token,
+    required this.userProfileData // 2. Tambahkan ke constructor
   });
 
   @override
@@ -28,12 +30,13 @@ class _MainScreenState extends State<MainScreen> {
       case 0:
         return HomePage(userName: widget.userName);
       case 1:
-        // 3. Sekarang token bisa dikirim ke KelasPage tanpa error
-        return KelasPage(token: widget.token); 
+        // 3. Kirim token DAN userData ke KelasPage untuk cek kelengkapan profil
+        return KelasPage(token: widget.token, userData: widget.userProfileData); 
       case 2:
         return const NotifikasiPage();
       case 3:
-        return const AkunPage();
+        // 4. Kirim userData ke AkunPage agar Gmail & No HP muncul otomatis
+        return AkunPage(token: widget.token, userData: widget.userProfileData);
       default:
         return HomePage(userName: widget.userName);
     }

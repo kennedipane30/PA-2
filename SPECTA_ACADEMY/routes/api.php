@@ -51,4 +51,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     });
 
+        Route::middleware('auth:sanctum')->group(function () {
+        // ... rute lain ...
+        Route::post('/update-profile', [AuthController::class, 'updateProfile']);
+    });
+
 });

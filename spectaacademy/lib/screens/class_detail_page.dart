@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart'; // Pastikan import ini benar
+import '../services/auth_service.dart'; 
 import 'dart:convert';
 
 class ClassDetailPage extends StatefulWidget {
@@ -29,7 +29,6 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
     _fetchStatus();
   }
 
-  // PERBAIKAN: Nama method disesuaikan dengan AuthService (checkClassStatus)
   _fetchStatus() async {
     try {
       var resp = await AuthService.checkClassStatus(widget.classId, widget.token);
@@ -44,26 +43,49 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
     }
   }
 
-  // PERBAIKAN: Memanggil method joinClass dari AuthService
+  // --- MODIFIKASI FUNGSI DAFTAR (DENGAN LOGIKA GATEKEEPER) ---
   void _handleDaftar() async {
-    // Tampilkan Loading
-    showDialog(context: context, builder: (_) => const Center(child: CircularProgressIndicator()));
+    showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator(color: Color(0xFF990000))));
 
     try {
       var resp = await AuthService.joinClass(widget.classId, widget.token);
+      
+      if (!mounted) return;
       Navigator.pop(context); // Tutup Loading
 
+      final responseData = jsonDecode(resp.body);
+
       if (resp.statusCode == 200) {
+        // SUKSES DAFTAR
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(backgroundColor: Colors.green, content: Text("Pendaftaran Berhasil! Menunggu Verifikasi Admin."))
         );
-        _fetchStatus(); // Refresh status di layar
-      } else {
+        _fetchStatus(); 
+      } 
+      else if (resp.statusCode == 403) {
+        // TERBLOKIR: DATA BELUM LENGKAP (Gatekeeper)
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("Profil Belum Lengkap", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF990000))),
+            content: Text(responseData['message'] ?? "Silakan lengkapi data Nama Orang Tua, Alamat, dan WA Ortu di menu Akun sebelum mendaftar kelas."),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context), 
+                child: const Text("OKE, SAYA MENGERTI", style: TextStyle(fontWeight: FontWeight.bold))
+              )
+            ],
+          ),
+        );
+      } 
+      else {
+        // ERROR LAINNYA
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(backgroundColor: Colors.red, content: Text("Gagal mendaftar, coba lagi."))
+          SnackBar(backgroundColor: Colors.red, content: Text(responseData['message'] ?? "Gagal mendaftar, coba lagi."))
         );
       }
     } catch (e) {
+      if (!mounted) return;
       Navigator.pop(context);
       print("Error join class: $e");
     }
@@ -81,14 +103,12 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
         ? Center(child: CircularProgressIndicator(color: spektaRed)) 
         : Column(
             children: [
-              // Banner Info Status (Pending/None)
               _buildStatusBanner(),
               
-              // Tampilan List Materi (Mata Kuliah: Kontrol Akses)
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.all(15),
-                  itemCount: 5, // Contoh 5 materi
+                  itemCount: 5, 
                   itemBuilder: (context, index) {
                     bool isLocked = status != 'aktif';
                     return Card(
@@ -144,6 +164,6 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
         ),
       );
     }
-    return const SizedBox(); // Jika status 'aktif', tidak perlu banner
+    return const SizedBox(); 
   }
 }

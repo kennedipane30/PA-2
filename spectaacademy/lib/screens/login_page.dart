@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import 'register_page.dart'; // Import halaman register
-import 'main_screen.dart';   // Import halaman home
+import 'register_page.dart'; 
+import 'main_screen.dart';   
 import 'dart:convert';
 
 class LoginPage extends StatefulWidget {
@@ -12,12 +12,10 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // Controller untuk mengambil data input
   final TextEditingController nameCtrl = TextEditingController();
   final TextEditingController passCtrl = TextEditingController();
   final Color spektaRed = const Color(0xFF990000);
 
-  // FUNGSI LOGIN (Hanya Nama & Password)
   void handleLogin() async {
     if (nameCtrl.text.isEmpty || passCtrl.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -26,7 +24,6 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    // Tampilkan Loading
     showDialog(
       context: context, 
       barrierDismissible: false, 
@@ -34,21 +31,22 @@ class _LoginPageState extends State<LoginPage> {
     );
 
     try {
-      // Panggil API Login (Sudah dimodifikasi di AuthService pakai Nama)
       var resp = await AuthService.login(nameCtrl.text, passCtrl.text);
       
       if (!mounted) return;
-      Navigator.pop(context); // Tutup Loading
+      Navigator.pop(context); 
 
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body);
         
-        // LOGIN SUKSES -> LANGSUNG KE HOME
+        // --- MODIFIKASI DI SINI ---
+        // Mengirim data user lengkap (userProfileData) ke MainScreen
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => MainScreen(
             userName: data['user']['name'], 
-            token: data['token']
+            token: data['token'],
+            userProfileData: data['user'], // Menambahkan baris ini
           )),
           (route) => false,
         );
@@ -59,6 +57,7 @@ class _LoginPageState extends State<LoginPage> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(backgroundColor: Colors.black, content: Text("Koneksi Error: Pastikan server Laravel menyala."))
@@ -75,7 +74,6 @@ class _LoginPageState extends State<LoginPage> {
         child: Column(
           children: [
             const SizedBox(height: 120),
-            // Logo Spekta
             const Text(
               "SPEKTA ACADEMY",
               style: TextStyle(
@@ -87,8 +85,6 @@ class _LoginPageState extends State<LoginPage> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 80),
-
-            // Input Nama Lengkap
             TextField(
               controller: nameCtrl,
               decoration: const InputDecoration(
@@ -99,8 +95,6 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
             const SizedBox(height: 25),
-
-            // Input Password
             TextField(
               controller: passCtrl,
               obscureText: true,
@@ -112,8 +106,6 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
             const SizedBox(height: 50),
-
-            // Tombol MASUK
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: spektaRed,
@@ -127,10 +119,7 @@ class _LoginPageState extends State<LoginPage> {
                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
               ),
             ),
-
             const SizedBox(height: 30),
-
-            // Link ke Registrasi (Permintaanmu)
             TextButton(
               onPressed: () {
                 Navigator.push(
