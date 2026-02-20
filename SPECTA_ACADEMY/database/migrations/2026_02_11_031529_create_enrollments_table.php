@@ -15,7 +15,13 @@ public function up(): void
         $table->id('enrollmentsID');
         $table->foreignId('user_id')->constrained('users', 'usersID')->onDelete('cascade');
         $table->foreignId('class_id')->constrained('class_models', 'class_modelsID')->onDelete('cascade');
-        $table->enum('status', ['pending', 'aktif'])->default('pending');
+
+        // --- ATRIBUT UNTUK BUKTI BAYAR & MASA AKSES ---
+        $table->string('payment_proof')->nullable(); // Foto bukti transfer
+        $table->enum('status', ['pending', 'aktif', 'expired'])->default('pending');
+        $table->timestamp('expires_at')->nullable(); // Tanggal masa aktif habis
+        // ----------------------------------------------
+
         $table->timestamps();
     });
 }

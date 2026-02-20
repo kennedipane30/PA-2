@@ -6,19 +6,19 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up(): void
-    {
-        Schema::create('students', function (Blueprint $table) {
-            $table->id('studentsID');
-            $table->foreignId('user_id')->constrained('users', 'usersID')->onDelete('cascade');
-            $table->string('parent_name')->nullable(); // Nama Orang Tua
-            $table->string('school')->nullable();      // Kita gunakan untuk Alamat
-            $table->string('wa_ortu')->nullable();    // Nomor WA Ortu
-            $table->string('grade')->default('12 IPA');
-            $table->date('dob')->nullable();
-            $table->timestamps();
-        });
-    }
+public function up(): void {
+    Schema::create('students', function (Blueprint $table) {
+        $table->id('studentsID');
+        $table->foreignId('user_id')->constrained('users', 'usersID')->onDelete('cascade');
+        $table->string('parent_name')->nullable(); // Nama Orang Tua
+        $table->string('school')->nullable();      // Gunakan ini untuk Alamat
+        $table->string('wa_ortu')->nullable();
+        $table->string('nisn')->nullable();       // NISN
+        $table->date('dob')->nullable();          // Tanggal Lahir
+        $table->string('grade')->default('12 IPA');
+        $table->timestamps();
+    });
+}
 
     public function down(): void
     {

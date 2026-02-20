@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import 'dart:convert'; // WAJIB ADA untuk memproses respon JSON
+import 'package:intl/intl.dart';
+import 'dart:convert';
 
 class EditProfilePage extends StatefulWidget {
   final Map userData; 
@@ -14,130 +15,112 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _parentCtrl = TextEditingController();
   final _alamatCtrl = TextEditingController();
   final _waOrtuCtrl = TextEditingController();
+  final _nisnCtrl = TextEditingController();
+  final _dobCtrl = TextEditingController();
   final Color spektaRed = const Color(0xFF990000);
 
   @override void initState() {
     super.initState();
-    // Isi otomatis jika data sudah ada di database (Sesuai ERD Student)
+    // Isi otomatis jika data sudah ada
     if (widget.userData['student'] != null) {
-      _parentCtrl.text = widget.userData['student']['parent_name'] ?? "";
-      _alamatCtrl.text = widget.userData['student']['school'] ?? "";
-      _waOrtuCtrl.text = widget.userData['student']['wa_ortu'] ?? "";
+      var s = widget.userData['student'];
+      _parentCtrl.text = s['parent_name'] ?? "";
+      _alamatCtrl.text = s['school'] ?? "";
+      _waOrtuCtrl.text = s['wa_ortu'] ?? "";
+      _nisnCtrl.text = s['nisn'] ?? "";
+      _dobCtrl.text = s['dob'] ?? "";
     }
   }
 
- void _saveProfile() async {
-  if (_parentCtrl.text.isEmpty || _alamatCtrl.text.isEmpty || _waOrtuCtrl.text.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Isi semua data!")));
-    return;
-  }
-
-  showDialog(context: context, builder: (_) => const Center(child: CircularProgressIndicator(color: Color(0xFF990000))));
-
-  var resp = await AuthService.updateProfile({
-    'parent_name': _parentCtrl.text,
-    'alamat': _alamatCtrl.text,
-    'wa_ortu': _waOrtuCtrl.text,
-  }, widget.token);
-
-  if (!mounted) return;
-  Navigator.pop(context); // Tutup Loading
-
-  if (resp.statusCode == 200) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(backgroundColor: Colors.green, content: Text("Data diri anda berhasil dilengkapi"))
+  // Fungsi Pilih Tanggal (DatePicker)
+  Future<void> _selectDate() async {
+    DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(2005),
+      firstDate: DateTime(1990),
+      lastDate: DateTime.now(),
     );
-    Future.delayed(const Duration(seconds: 1), () => Navigator.pop(context, true));
+    if (picked != null) {
+      setState(() => _dobCtrl.text = DateFormat('yyyy-MM-dd').format(picked));
+    }
   }
-}
-  
+
+  void _handleSave() async {
+    if (_parentCtrl.text.isEmpty || _alamatCtrl.text.isEmpty || _nisnCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Isi semua data!")));
+      return;
+    }
+
+    showDialog(context: context, builder: (_) => const Center(child: CircularProgressIndicator(color: Color(0xFF990000))));
+
+    var resp = await AuthService.updateProfile({
+      'parent_name': _parentCtrl.text,
+      'alamat': _alamatCtrl.text,
+      'wa_ortu': _waOrtuCtrl.text,
+      'nisn': _nisnCtrl.text,
+      'dob': _dobCtrl.text,
+    }, widget.token);
+
+    if (!mounted) return;
+    Navigator.pop(context); // Tutup Loading
+
+    if (resp.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text("Data diri anda berhasil dilengkapi")));
+      Navigator.pop(context, true); // Balik ke halaman Akun
+    } else {
+      final err = jsonDecode(resp.body);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text(err['message'])));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text("Lengkapi Data Diri", style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: spektaRed,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text("Lengkapi Data Diri"), backgroundColor: spektaRed, foregroundColor: Colors.white),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(25),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // INFO GMAIL & NO WA (Tampil Otomatis & Read Only)
-            const Text("Data Akun Terdaftar", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-            const SizedBox(height: 10),
+            // INFO AKUN (READ ONLY)
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(15)),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.email_outlined, color: Colors.grey), 
-                    title: const Text("Gmail", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    subtitle: Text(widget.userData['email'] ?? "-", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.phone_android_outlined, color: Colors.grey), 
-                    title: const Text("Nomor WhatsApp", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    subtitle: Text(widget.userData['phone'] ?? "-", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
-                  ),
-                ],
-              ),
+              child: Column(children: [
+                ListTile(leading: const Icon(Icons.email_outlined), title: const Text("Gmail"), subtitle: Text(widget.userData['email'] ?? "-")),
+                const Divider(),
+                ListTile(leading: const Icon(Icons.phone_android), title: const Text("Nomor WhatsApp"), subtitle: Text(widget.userData['phone'] ?? "-")),
+              ]),
             ),
-            
             const SizedBox(height: 30),
-            const Text("Data Orang Tua & Alamat", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-            const SizedBox(height: 15),
             
-            // FORM INPUT
+            // INPUT MANUAL
+            _buildInput(_nisnCtrl, "NISN Siswa", Icons.numbers),
+            _buildInput(_parentCtrl, "Nama Orang Tua", Icons.person_outline),
+            _buildInput(_alamatCtrl, "Alamat Lengkap", Icons.location_on_outlined),
+            _buildInput(_waOrtuCtrl, "WhatsApp Orang Tua", Icons.phone),
+            
+            // Tanggal Lahir (DatePicker)
             TextField(
-              controller: _parentCtrl, 
-              decoration: InputDecoration(
-                labelText: "Nama Orang Tua", 
-                prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF990000)),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(15))
-              )
-            ),
-            const SizedBox(height: 15),
-            TextField(
-              controller: _alamatCtrl, 
-              decoration: InputDecoration(
-                labelText: "Alamat Lengkap", 
-                prefixIcon: const Icon(Icons.location_on_outlined, color: Color(0xFF990000)),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(15))
-              )
-            ),
-            const SizedBox(height: 15),
-            TextField(
-              controller: _waOrtuCtrl, 
-              keyboardType: TextInputType.phone, 
-              decoration: InputDecoration(
-                labelText: "WhatsApp Orang Tua", 
-                prefixIcon: const Icon(Icons.phone_android, color: Color(0xFF990000)),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(15))
-              )
+              controller: _dobCtrl, readOnly: true, onTap: _selectDate,
+              decoration: const InputDecoration(labelText: "Tanggal Lahir", prefixIcon: Icon(Icons.calendar_month, color: Color(0xFF990000))),
             ),
             
             const SizedBox(height: 50),
-            
-            // TOMBOL SIMPAN
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: spektaRed,
-                minimumSize: const Size(double.infinity, 55),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                elevation: 5,
-              ),
-              onPressed: _saveProfile,
-              child: const Text("SIMPAN DATA", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+              style: ElevatedButton.styleFrom(backgroundColor: spektaRed, minimumSize: const Size(double.infinity, 55), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+              onPressed: _handleSave,
+              child: const Text("SIMPAN DATA", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             )
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildInput(TextEditingController ctrl, String label, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: TextField(controller: ctrl, decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon, color: spektaRed))),
     );
   }
 }

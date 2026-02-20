@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart'; 
+import 'package:image_picker/image_picker.dart'; // Wajib ada di pubspec.yaml
+import 'dart:io';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../services/auth_service.dart';
 
 class ClassDetailPage extends StatefulWidget {
   final int classId;
   final String className;
-  final String token; 
-  
+  final String token;
+  final Map userData; // Untuk data pengecekan profil
+
   const ClassDetailPage({
-    super.key, 
-    required this.classId, 
-    required this.className, 
-    required this.token
+    super.key,
+    required this.classId,
+    required this.className,
+    required this.token,
+    required this.userData,
   });
 
   @override
@@ -19,7 +24,7 @@ class ClassDetailPage extends StatefulWidget {
 }
 
 class _ClassDetailPageState extends State<ClassDetailPage> {
-  String status = "none";
+  String status = "none"; // none, pending, aktif
   bool isLoading = true;
   final Color spektaRed = const Color(0xFF990000);
 
@@ -29,7 +34,8 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
     _fetchStatus();
   }
 
-  _fetchStatus() async {
+  // 1. CEK STATUS PENDAFTARAN (Mata Kuliah: Aplikasi Terdistribusi)
+  Future<void> _fetchStatus() async {
     try {
       var resp = await AuthService.checkClassStatus(widget.classId, widget.token);
       if (resp.statusCode == 200) {
@@ -43,36 +49,59 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
     }
   }
 
-  // --- MODIFIKASI FUNGSI DAFTAR (DENGAN LOGIKA GATEKEEPER) ---
+  // 2. LOGIKA DAFTAR & UPLOAD (Mata Kuliah: Keamanan & Cloud)
   void _handleDaftar() async {
-    showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator(color: Color(0xFF990000))));
+    // A. Pilih Gambar Bukti Transfer
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Pilih foto bukti transfer untuk mendaftar!"))
+      );
+      return;
+    }
+
+    // B. Tampilkan Loading
+    showDialog(
+      context: context, 
+      barrierDismissible: false, 
+      builder: (_) => const Center(child: CircularProgressIndicator(color: Color(0xFF990000)))
+    );
 
     try {
-      var resp = await AuthService.joinClass(widget.classId, widget.token);
-      
+      // C. Kirim Data Multipart ke Laravel
+      var streamedResponse = await AuthService.joinClass(
+        widget.classId, 
+        image.path, 
+        widget.token
+      );
+
+      // D. Konversi Stream ke Response Biasa
+      var response = await http.Response.fromStream(streamedResponse);
+      final responseData = jsonDecode(response.body);
+
       if (!mounted) return;
       Navigator.pop(context); // Tutup Loading
 
-      final responseData = jsonDecode(resp.body);
-
-      if (resp.statusCode == 200) {
-        // SUKSES DAFTAR
+      if (response.statusCode == 200) {
+        // SUKSES
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(backgroundColor: Colors.green, content: Text("Pendaftaran Berhasil! Menunggu Verifikasi Admin."))
+          const SnackBar(backgroundColor: Colors.green, content: Text("Bukti Terkirim! Menunggu Verifikasi Admin."))
         );
-        _fetchStatus(); 
+        _fetchStatus(); // Update UI jadi 'pending'
       } 
-      else if (resp.statusCode == 403) {
-        // TERBLOKIR: DATA BELUM LENGKAP (Gatekeeper)
+      else if (response.statusCode == 403) {
+        // TERBLOKIR: PROFIL BELUM LENGKAP (Gatekeeper Logic)
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text("Profil Belum Lengkap", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF990000))),
-            content: Text(responseData['message'] ?? "Silakan lengkapi data Nama Orang Tua, Alamat, dan WA Ortu di menu Akun sebelum mendaftar kelas."),
+            content: Text(responseData['message'] ?? "Lengkapi data diri di menu Akun."),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context), 
-                child: const Text("OKE, SAYA MENGERTI", style: TextStyle(fontWeight: FontWeight.bold))
+                child: const Text("OKE, SAYA LENGKAPI", style: TextStyle(fontWeight: FontWeight.bold))
               )
             ],
           ),
@@ -81,13 +110,13 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
       else {
         // ERROR LAINNYA
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(backgroundColor: Colors.red, content: Text(responseData['message'] ?? "Gagal mendaftar, coba lagi."))
+          SnackBar(backgroundColor: Colors.red, content: Text(responseData['message'] ?? "Gagal mendaftar"))
         );
       }
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context);
-      print("Error join class: $e");
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Koneksi Error!")));
     }
   }
 
@@ -95,36 +124,43 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.className, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(widget.className, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: spektaRed,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: isLoading 
         ? Center(child: CircularProgressIndicator(color: spektaRed)) 
         : Column(
             children: [
+              // Banner Feedback Status
               _buildStatusBanner(),
               
+              // List Materi (Locked/Unlocked)
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.all(15),
-                  itemCount: 5, 
+                  itemCount: 5, // Contoh ada 5 materi
                   itemBuilder: (context, index) {
                     bool isLocked = status != 'aktif';
                     return Card(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                      elevation: 2,
                       child: ListTile(
                         leading: Icon(
-                          isLocked ? Icons.lock : Icons.play_circle_fill, 
-                          color: isLocked ? Colors.grey : Colors.green
+                          isLocked ? Icons.lock_outline : Icons.play_circle_fill, 
+                          color: isLocked ? Colors.grey : Colors.green,
+                          size: 30,
                         ),
-                        title: Text("Materi Pertemuan ke-${index + 1}"),
-                        subtitle: Text(isLocked ? "Akses Terkunci" : "Klik untuk menonton video"),
+                        title: Text("Materi Video Pertemuan ${index + 1}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text(isLocked ? "Daftar untuk membuka" : "Klik untuk menonton"),
+                        trailing: const Icon(Icons.chevron_right),
                         onTap: isLocked ? () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Silakan daftar kelas untuk melihat materi!"))
+                            const SnackBar(content: Text("Materi Terkunci! Silakan daftar kelas."))
                           );
                         } : () {
-                          // Buka Materi Video
+                          // Aksi buka video
                         },
                       ),
                     );
@@ -139,15 +175,18 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
   Widget _buildStatusBanner() {
     if (status == 'none') {
       return Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(20),
         color: Colors.red[50],
-        child: Row(
+        child: Column(
           children: [
-            const Expanded(child: Text("Anda belum terdaftar di kelas ini.", style: TextStyle(fontWeight: FontWeight.bold))),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: spektaRed),
+            const Text("Anda belum memiliki akses ke materi ini.", style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
               onPressed: _handleDaftar, 
-              child: const Text("Daftar Sekarang", style: TextStyle(color: Colors.white))
+              icon: const Icon(Icons.assignment_ind, color: Colors.white),
+              label: const Text("DAFTAR & KIRIM BUKTI BAYAR", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(backgroundColor: spektaRed, minimumSize: const Size(double.infinity, 45)),
             )
           ],
         ),
@@ -156,14 +195,17 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(15),
-        color: Colors.orange[100],
-        child: const Text(
-          "⏳ Pendaftaran sedang diverifikasi oleh Admin. Mohon tunggu.", 
-          textAlign: TextAlign.center,
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+        color: Colors.orange[50],
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.hourglass_empty, color: Colors.orange, size: 20),
+            SizedBox(width: 10),
+            Text("Pendaftaran sedang diverifikasi Admin", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+          ],
         ),
       );
     }
-    return const SizedBox(); 
+    return const SizedBox(); // Jika status 'aktif', banner hilang
   }
 }
