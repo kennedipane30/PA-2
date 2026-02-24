@@ -5,69 +5,63 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Enrollment;
 use App\Models\User;
-use App\Models\Student;
 use Illuminate\Http\Request;
 
 class ManajemenSiswaController extends Controller
 {
     /**
-     * 1. Menampilkan Daftar Semua Siswa Terdaftar (General CRUD)
+     * 1. FITUR: SEMUA SISWA
+     * Menampilkan semua orang yang sudah punya akun (Siswa)
      */
     public function index()
     {
-        // Ambil semua user yang rolenya siswa (ID: 3)
         $siswas = User::where('role_id', 3)->with('student')->latest()->get();
         return view('admin.siswa.index', compact('siswas'));
     }
 
     /**
-     * 2. Menampilkan Daftar Antrean Pendaftaran (Pending Verification)
-     * Ini fungsi utama untuk melihat siapa yang sudah bayar tapi belum masuk kelas.
+     * 2. FITUR: TAMBAH KELAS (Daftar Tunggu)
+     * Menampilkan siswa yang baru daftar di HP dan statusnya masih PENDING
      */
-    public function pendaftaranKelas()
+    public function indexPendaftaran()
     {
-        // Ambil data dari tabel enrollments yang statusnya PENDING
-        $pendaftar = Enrollment::with(['user.student', 'classModel'])
-                                ->where('status', 'pending')
-                                ->latest()
-                                ->get();
+        // Ambil data pendaftaran yang belum diaktivasi (status pending)
+        $data = Enrollment::with(['user.student', 'classModel'])
+                          ->where('status', 'pending')
+                          ->latest()
+                          ->get();
 
-        return view('admin.siswa.pendaftaran', compact('pendaftar'));
+        return view('admin.siswa.pendaftaran', compact('data'));
     }
 
     /**
-     * 3. Form Aktivasi (Halaman untuk input durasi akses)
-     * Menampilkan data lengkap: Nama, NISN, Nama Ortu, Alamat, dan BUKTI BAYAR.
+     * 3. DETAIL SISWA & FORM AKTIVASI
+     * Menampilkan data lengkap satu siswa (A atau B) saat diklik
      */
-    public function formAktivasi($enrollmentsID)
+    public function formAktivasi($id)
     {
-        $enroll = Enrollment::with(['user.student', 'classModel'])->findOrFail($enrollmentsID);
+        $enroll = Enrollment::with(['user.student', 'classModel'])->findOrFail($id);
         return view('admin.siswa.aktivasi_form', compact('enroll'));
     }
 
     /**
-     * 4. Proses Memasukkan Siswa ke Kelas (Activation)
-     * Mengubah status jadi Aktif dan menentukan masa berlaku (Expires At).
+     * 4. PROSES AKTIVASI KE KELAS
      */
-    public function aktivasiSiswa(Request $request, $enrollmentsID)
-    {
-        // Validasi: Admin wajib memasukkan angka durasi (Mata Kuliah: Kualitas/Security)
-        $request->validate([
-            'durasi' => 'required|numeric|min:1',
-        ], [
-            'durasi.required' => 'Tentukan berapa hari siswa dapat mengakses kelas!'
-        ]);
+public function prosesAktivasi(Request $request, $id)
+{
+    // 1. Validasi agar input harus angka
+    $request->validate([
+        'durasi' => 'required|numeric'
+    ]);
 
-        $enroll = Enrollment::findOrFail($enrollmentsID);
+    $enroll = Enrollment::findOrFail($id);
 
-        // Update Status & Set Tanggal Kadaluarsa otomatis (Mata Kuliah: Aplikasi Terdistribusi)
-        $enroll->update([
-            'status' => 'aktif',
-            'expires_at' => now()->addDays($request->durasi)
-        ]);
+    // 2. PROSES UPDATE (Tambahkan (int) di sini)
+    $enroll->update([
+        'status' => 'aktif',
+        'expires_at' => now()->addDays((int) $request->durasi) // <--- PERBAIKAN DI SINI
+    ]);
 
-        // Berikan notifikasi sukses ke Admin
-        return redirect()->route('admin.siswa.pendaftaran')
-                         ->with('success', 'Siswa ' . $enroll->user->name . ' berhasil diaktifkan selama ' . $request->durasi . ' hari.');
-    }
+    return redirect()->route('admin.siswa.pendaftaran')->with('success', 'Siswa berhasil diaktifkan!');
+}
 }

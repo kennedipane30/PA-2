@@ -31,9 +31,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
     // Manajemen Pengumuman
-    // Route::get('/pengumuman', [PengumumanController::class, 'index'])->name('pengumuman.index');
-    // Route::post('/pengumuman', [PengumumanController::class, 'store'])->name('pengumuman.store');
-    // Route::delete('/pengumuman/{id}', [PengumumanController::class, 'destroy'])->name('pengumuman.destroy');
+    Route::get('/pengumuman', [PengumumanController::class, 'index'])->name('pengumuman.index');
+    Route::post('/pengumuman', [PengumumanController::class, 'store'])->name('pengumuman.store');
+    Route::delete('/pengumuman/{id}', [PengumumanController::class, 'destroy'])->name('pengumuman.destroy');
 
     // Manajemen Galeri
     Route::get('/galeri', [GaleriController::class, 'index'])->name('galeri.index');
@@ -42,11 +42,18 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::put('/galeri/update/{id}', [GaleriController::class, 'update'])->name('galeri.update');
     Route::delete('/galeri/hapus/{id}', [GaleriController::class, 'destroy'])->name('galeri.destroy');
 
-    // Manajemen Siswa & Verifikasi Pendaftaran Kelas (ALUR INTI)
-    Route::get('/siswa', [ManajemenSiswaController::class, 'index'])->name('siswa.index');
-    Route::get('/pendaftaran', [ManajemenSiswaController::class, 'indexPendaftaran'])->name('pendaftaran.index');
-    Route::get('/pendaftaran/{id}', [ManajemenSiswaController::class, 'formAktivasi'])->name('pendaftaran.show');
-    Route::post('/pendaftaran/aktivasi/{id}', [ManajemenSiswaController::class, 'prosesAktivasi'])->name('pendaftaran.aktivasi');
+    // --- FITUR MANAJEMEN SISWA (HIERARKIS) ---
+    Route::prefix('siswa')->name('siswa.')->group(function () {
+        // 1. Sub-menu: Semua Siswa
+        Route::get('/semua', [ManajemenSiswaController::class, 'index'])->name('index');
+
+        // 2. Sub-menu: Tambah Kelas (Halaman Antrean Pendaftaran)
+        Route::get('/tambah-kelas', [ManajemenSiswaController::class, 'indexPendaftaran'])->name('pendaftaran');
+
+        // 3. Detail & Form Aktivasi (Klik Siswa A muncul Data A)
+        Route::get('/tambah-kelas/aktivasi/{id}', [ManajemenSiswaController::class, 'formAktivasi'])->name('form_aktivasi');
+        Route::post('/tambah-kelas/proses/{id}', [ManajemenSiswaController::class, 'prosesAktivasi'])->name('proses_aktivasi');
+    });
 
     // Manajemen Keuangan & Promo
     Route::get('/pembayaran', [PembayaranController::class, 'index'])->name('pembayaran.index');
