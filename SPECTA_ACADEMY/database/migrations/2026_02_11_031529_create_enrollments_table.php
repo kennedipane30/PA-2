@@ -9,22 +9,17 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-public function up(): void
-{
+public function up(): void {
     Schema::create('enrollments', function (Blueprint $table) {
         $table->id('enrollmentsID');
         $table->foreignId('user_id')->constrained('users', 'usersID')->onDelete('cascade');
         $table->foreignId('class_id')->constrained('class_models', 'class_modelsID')->onDelete('cascade');
-
-        // --- ATRIBUT UNTUK BUKTI BAYAR & MASA AKSES ---
-        $table->string('payment_proof')->nullable(); // Foto bukti transfer
+        $table->string('payment_proof'); // Simpan path foto struk
         $table->enum('status', ['pending', 'aktif', 'expired'])->default('pending');
-        $table->timestamp('expires_at')->nullable(); // Tanggal masa aktif habis
-        // ----------------------------------------------
-
+        $table->timestamp('expires_at')->nullable(); // Ditentukan Admin nanti
         $table->timestamps();
     });
-}
+    }
 
     /**
      * Reverse the migrations.

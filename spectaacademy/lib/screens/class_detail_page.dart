@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart'; // Wajib ada di pubspec.yaml
+import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -9,7 +9,7 @@ class ClassDetailPage extends StatefulWidget {
   final int classId;
   final String className;
   final String token;
-  final Map userData; // Untuk data pengecekan profil
+  final Map userData;
 
   const ClassDetailPage({
     super.key,
@@ -24,188 +24,247 @@ class ClassDetailPage extends StatefulWidget {
 }
 
 class _ClassDetailPageState extends State<ClassDetailPage> {
-  String status = "none"; // none, pending, aktif
+  String status = "none";
+  List materi = [];
   bool isLoading = true;
   final Color spektaRed = const Color(0xFF990000);
 
   @override
   void initState() {
     super.initState();
-    _fetchStatus();
+    _fetchDetail();
   }
 
-  // 1. CEK STATUS PENDAFTARAN (Mata Kuliah: Aplikasi Terdistribusi)
-  Future<void> _fetchStatus() async {
+  // 1. Ambil Konten Materi & Status Pendaftaran
+  Future<void> _fetchDetail() async {
     try {
-      var resp = await AuthService.checkClassStatus(widget.classId, widget.token);
+      var resp = await AuthService.getClassContent(widget.classId, widget.token);
       if (resp.statusCode == 200) {
+        var data = jsonDecode(resp.body);
         setState(() {
-          status = jsonDecode(resp.body)['status'];
+          status = data['enroll_status'];
+          materi = data['materi'];
           isLoading = false;
         });
       }
     } catch (e) {
-      print("Error fetch status: $e");
+      print("Error fetch detail: $e");
     }
   }
 
-  // 2. LOGIKA DAFTAR & UPLOAD (Mata Kuliah: Keamanan & Cloud)
-  void _handleDaftar() async {
-    // A. Pilih Gambar Bukti Transfer
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-
-    if (image == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Pilih foto bukti transfer untuk mendaftar!"))
-      );
-      return;
-    }
-
-    // B. Tampilkan Loading
+  // 2. Fungsi Kirim Data & Upload Bukti ke Laravel
+  void _processUpload(File image) async {
     showDialog(
-      context: context, 
-      barrierDismissible: false, 
-      builder: (_) => const Center(child: CircularProgressIndicator(color: Color(0xFF990000)))
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(child: CircularProgressIndicator(color: spektaRed)),
     );
 
     try {
-      // C. Kirim Data Multipart ke Laravel
-      var streamedResponse = await AuthService.joinClass(
-        widget.classId, 
-        image.path, 
-        widget.token
-      );
-
-      // D. Konversi Stream ke Response Biasa
-      var response = await http.Response.fromStream(streamedResponse);
-      final responseData = jsonDecode(response.body);
+      var streamedResp = await AuthService.joinClass(widget.classId, image.path, widget.token);
+      var response = await http.Response.fromStream(streamedResp);
 
       if (!mounted) return;
       Navigator.pop(context); // Tutup Loading
 
       if (response.statusCode == 200) {
-        // SUKSES
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(backgroundColor: Colors.green, content: Text("Bukti Terkirim! Menunggu Verifikasi Admin."))
+          const SnackBar(backgroundColor: Colors.green, content: Text("Pendaftaran Berhasil! Menunggu Verifikasi Admin."))
         );
-        _fetchStatus(); // Update UI jadi 'pending'
-      } 
-      else if (response.statusCode == 403) {
-        // TERBLOKIR: PROFIL BELUM LENGKAP (Gatekeeper Logic)
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text("Profil Belum Lengkap", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF990000))),
-            content: Text(responseData['message'] ?? "Lengkapi data diri di menu Akun."),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context), 
-                child: const Text("OKE, SAYA LENGKAPI", style: TextStyle(fontWeight: FontWeight.bold))
-              )
-            ],
-          ),
-        );
-      } 
-      else {
-        // ERROR LAINNYA
+        _fetchDetail(); // Refresh status gembok
+      } else {
+        final errorData = jsonDecode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(backgroundColor: Colors.red, content: Text(responseData['message'] ?? "Gagal mendaftar"))
+          SnackBar(backgroundColor: Colors.red, content: Text(errorData['message'] ?? "Gagal mendaftar"))
         );
       }
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Koneksi Error!")));
+      print("Error: $e");
     }
+  }
+
+  // 3. Bottom Sheet Form Pendaftaran (Nama & NISN Otomatis)
+  void _showDaftarForm() {
+    File? _imageFile;
+    final nameController = TextEditingController(text: widget.userData['name']);
+    final nisnController = TextEditingController(text: widget.userData['student']['nisn'] ?? "-");
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 25, right: 25, top: 25),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text("Konfirmasi Pendaftaran", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Divider(),
+                
+                _buildField(nameController, "Nama Pendaftar", Icons.person, true),
+                _buildField(nisnController, "NISN Anda", Icons.numbers, true),
+                
+                const SizedBox(height: 20),
+
+                // INFO REKENING
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(color: Colors.red[50], borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.red.shade200)),
+                  child: Column(
+                    children: [
+                      const Text("Silakan transfer ke Rekening Pusat:", style: TextStyle(fontSize: 12)),
+                      Text("BANK MANDIRI: 123-456-7890", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: spektaRed)),
+                      const Text("a/n Spekta Academy Indonesia", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+
+                // UPLOAD BUKTI TF
+                InkWell(
+                  onTap: () async {
+                    final picker = ImagePicker();
+                    final picked = await picker.pickImage(source: ImageSource.gallery);
+                    if (picked != null) setModalState(() => _imageFile = File(picked.path));
+                  },
+                  child: Container(
+                    height: 150, width: double.infinity,
+                    decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.grey.shade300)),
+                    child: _imageFile == null 
+                      ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_photo_alternate, size: 40, color: spektaRed), const Text("Klik Upload Bukti Transfer", style: TextStyle(fontSize: 12, color: Colors.grey))])
+                      : ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.file(_imageFile!, fit: BoxFit.cover)),
+                  ),
+                ),
+
+                const SizedBox(height: 25),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: spektaRed, minimumSize: const Size(double.infinity, 55), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+                  onPressed: _imageFile == null ? null : () {
+                    Navigator.pop(context); // Tutup BottomSheet
+                    _processUpload(_imageFile!); // Jalankan upload
+                  }, 
+                  child: const Text("KONFIRMASI PEMBAYARAN", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: 30),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    bool isRegistered = status == 'aktif';
+
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(widget.className, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: Text(widget.className, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         backgroundColor: spektaRed,
         foregroundColor: Colors.white,
-        elevation: 0,
       ),
-      body: isLoading 
-        ? Center(child: CircularProgressIndicator(color: spektaRed)) 
-        : Column(
-            children: [
-              // Banner Feedback Status
-              _buildStatusBanner(),
-              
-              // List Materi (Locked/Unlocked)
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(15),
-                  itemCount: 5, // Contoh ada 5 materi
-                  itemBuilder: (context, index) {
-                    bool isLocked = status != 'aktif';
-                    return Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                      elevation: 2,
-                      child: ListTile(
-                        leading: Icon(
-                          isLocked ? Icons.lock_outline : Icons.play_circle_fill, 
-                          color: isLocked ? Colors.grey : Colors.green,
-                          size: 30,
+      body: isLoading
+          ? Center(child: CircularProgressIndicator(color: spektaRed))
+          : Column(
+              children: [
+                _buildStatusBanner(),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(15),
+                    itemCount: materi.length,
+                    itemBuilder: (context, index) {
+                      return Card(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                        child: ListTile(
+                          leading: Icon(
+                            isRegistered ? Icons.play_circle_fill : Icons.lock_outline,
+                            color: isRegistered ? Colors.green : Colors.grey,
+                          ),
+                          title: Text(materi[index]['title'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text(isRegistered ? "Klik untuk menonton" : "Akses Terkunci"),
+                          onTap: isRegistered ? () {
+                            // Aksi buka video
+                          } : () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Silakan daftar untuk melihat materi!"))
+                            );
+                          },
                         ),
-                        title: Text("Materi Video Pertemuan ${index + 1}", style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(isLocked ? "Daftar untuk membuka" : "Klik untuk menonton"),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: isLocked ? () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Materi Terkunci! Silakan daftar kelas."))
-                          );
-                        } : () {
-                          // Aksi buka video
-                        },
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              )
-            ],
-          ),
+              ],
+            ),
+      bottomNavigationBar: !isRegistered && status == 'none'
+          ? _buildBottomAction()
+          : null,
     );
   }
 
   Widget _buildStatusBanner() {
-    if (status == 'none') {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        color: Colors.red[50],
-        child: Column(
-          children: [
-            const Text("Anda belum memiliki akses ke materi ini.", style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            ElevatedButton.icon(
-              onPressed: _handleDaftar, 
-              icon: const Icon(Icons.assignment_ind, color: Colors.white),
-              label: const Text("DAFTAR & KIRIM BUKTI BAYAR", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(backgroundColor: spektaRed, minimumSize: const Size(double.infinity, 45)),
-            )
-          ],
-        ),
-      );
-    } else if (status == 'pending') {
+    if (status == 'pending') {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(15),
         color: Colors.orange[50],
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.hourglass_empty, color: Colors.orange, size: 20),
-            SizedBox(width: 10),
-            Text("Pendaftaran sedang diverifikasi Admin", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
-          ],
-        ),
+        child: const Text("⌛ Menunggu verifikasi admin", textAlign: TextAlign.center, style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
       );
     }
-    return const SizedBox(); // Jika status 'aktif', banner hilang
+    return const SizedBox();
+  }
+
+  Widget _buildBottomAction() {
+    return Container(
+      height: 110,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -3))],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text("Harga Program", style: TextStyle(color: Colors.grey, fontSize: 12)),
+              Text("Rp 900.000", style: TextStyle(color: Color(0xFF990000), fontSize: 20, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: spektaRed, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
+            onPressed: _showDaftarForm, // Membuka Bottom Sheet Form
+            child: const Text("DAFTAR SEKARANG", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildField(TextEditingController ctrl, String label, IconData icon, bool isReadOnly) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 15),
+      child: TextField(
+        controller: ctrl,
+        readOnly: isReadOnly,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, color: spektaRed),
+          filled: true,
+          fillColor: isReadOnly ? Colors.grey[100] : Colors.white,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      ),
+    );
   }
 }

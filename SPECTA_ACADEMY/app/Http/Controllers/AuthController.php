@@ -1,7 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\{User, Student, OtpCode, Enrollment};
+use App\Models\{User, Student, OtpCode, Enrollment, Material};
 use Illuminate\Http\{Request, JsonResponse};
 use Illuminate\Support\Facades\{Hash, Validator, DB, Auth};
 use Carbon\Carbon;
@@ -147,6 +147,22 @@ class AuthController extends Controller {
         $enroll = Enrollment::where('user_id', Auth::id())->where('class_id', $request->class_id)->first();
         return response()->json(['status' => $enroll ? $enroll->status : 'none']);
     }
+
+    public function getClassContent(Request $request): JsonResponse {
+    $classId = $request->class_id;
+    $materi = Material::where('class_id', $classId)->get();
+
+    // Cek apakah siswa ini sudah terdaftar/aktif di kelas ini
+    $enroll = Enrollment::where('user_id', Auth::id())->where('class_id', $classId)->first();
+
+    return response()->json([
+        'status' => 'success',
+        'enroll_status' => $enroll ? $enroll->status : 'none', // none, pending, aktif
+        'price' => '900.000',
+        'duration' => '30 Hari',
+        'materi' => $materi
+    ]);
+}
 
     // 7. LOGOUT
     public function logout(Request $request): JsonResponse {
