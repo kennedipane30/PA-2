@@ -162,18 +162,19 @@ class AuthController extends Controller {
     }
 
     /**
-     * 8. AMBIL JADWAL BELAJAR (UNTUK KALENDER MOBILE)
+     * 8. AMBIL JADWAL BELAJAR (MODIFIKASI: Tambahkan Nama Kelas)
      */
     public function getSiswaSchedule(Request $request): JsonResponse {
         $user = Auth::user();
 
-        // Hanya ambil jadwal dari kelas yang statusnya 'aktif'
+        // Ambil ID kelas yang statusnya 'aktif'
         $activeClassIds = Enrollment::where('user_id', $user->usersID)
                                     ->where('status', 'aktif')
                                     ->pluck('class_id');
 
+        // MODIFIKASI: Memuat relasi teacher DAN classModel
         $schedules = Schedule::whereIn('class_id', $activeClassIds)
-                            ->with('teacher') // Memuat info pengajar
+                            ->with(['teacher', 'classModel'])
                             ->get();
 
         return response()->json([

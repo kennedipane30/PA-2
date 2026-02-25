@@ -23,7 +23,6 @@
             </div>
             <nav class="mt-4 overflow-y-auto h-full pb-20">
                 @if(Auth::user()->role_id == 1) <!-- MENU ADMIN -->
-                    <div class="px-6 py-2 text-xs uppercase text-red-300 font-bold">Menu Administrasi</div>
 
                     <!-- Dashboard Admin -->
                     <a href="{{ route('admin.dashboard') }}" class="block py-3 px-6 hover:bg-red-800">🏠 Dashboard</a>
@@ -55,13 +54,14 @@
                             </a>
                         </div>
                     </div>
-
-                    <a href="{{ route('admin.pembayaran.index') }}" class="block py-3 px-6 hover:bg-red-800">💳 Pembayaran</a>
                     <a href="{{ route('admin.promo') }}" class="block py-3 px-6 hover:bg-red-800">🎁 Kode Promo</a>
+                    <!-- Tambahkan ini di sidebar admin -->
+                    <a href="{{ route('admin.manajemen-pengajar.index') }}" class="block py-3 px-6 hover:bg-red-800">
+                        👨‍🏫 Manajemen Pengajar
+                    </a>
                     <a href="{{ route('admin.galeri.index') }}" class="block py-3 px-6 hover:bg-red-800">🖼️ Galeri & Info</a>
 
                 @elseif(Auth::user()->role_id == 2) <!-- MENU PENGAJAR -->
-                    <div class="px-6 py-2 text-xs uppercase text-red-300 font-bold">Menu Pengajar</div>
 
                     <!-- Dashboard Pengajar -->
                     <a href="{{ route('pengajar.dashboard') }}" class="block py-3 px-6 hover:bg-red-800">🏠 Dashboard</a>
