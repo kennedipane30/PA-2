@@ -46,6 +46,9 @@ Route::middleware('auth:sanctum')->group(function () {
         // Siswa klik Daftar & Upload Bukti Transfer (Multipart)
         Route::post('/class/join', [AuthController::class, 'joinClass']);
 
+        // MODIFIKASI: Tambahkan rute untuk mengambil jadwal belajar
+        Route::get('/schedules', [AuthController::class, 'getSiswaSchedule']);
+
     });
 
 });

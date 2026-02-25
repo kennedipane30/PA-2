@@ -25,8 +25,11 @@
                 @if(Auth::user()->role_id == 1) <!-- MENU ADMIN -->
                     <div class="px-6 py-2 text-xs uppercase text-red-300 font-bold">Menu Administrasi</div>
 
-                    <!-- Dashboard -->
+                    <!-- Dashboard Admin -->
                     <a href="{{ route('admin.dashboard') }}" class="block py-3 px-6 hover:bg-red-800">🏠 Dashboard</a>
+
+                    <!-- MODIFIKASI: Menu Jadwal Admin -->
+                    <a href="{{ route('admin.jadwal.index') }}" class="block py-3 px-6 hover:bg-red-800">📅 Jadwal Kelas</a>
 
                     <!-- MENU SISWA DENGAN DROPDOWN -->
                     <div class="relative">
@@ -38,13 +41,9 @@
                         </button>
 
                         <div id="siswa-menu" class="hidden bg-red-950/30">
-                            <!-- Sub-menu 1: Semua Siswa -->
                             <a href="{{ route('admin.siswa.index') }}" class="block py-2 pl-12 pr-6 text-sm hover:text-yellow-400">
                                 ○ Semua Siswa
                             </a>
-
-                            <!-- Sub-menu 2: Tambah Kelas (Antrean Verifikasi) -->
-                            <!-- PERBAIKAN: Nama route disesuaikan dengan web.php -->
                             <a href="{{ route('admin.siswa.pendaftaran') }}" class="block py-2 pl-12 pr-6 text-sm hover:text-yellow-400 flex justify-between items-center">
                                 <span>○ Tambah Kelas</span>
                                 @php
@@ -63,7 +62,12 @@
 
                 @elseif(Auth::user()->role_id == 2) <!-- MENU PENGAJAR -->
                     <div class="px-6 py-2 text-xs uppercase text-red-300 font-bold">Menu Pengajar</div>
+
+                    <!-- Dashboard Pengajar -->
                     <a href="{{ route('pengajar.dashboard') }}" class="block py-3 px-6 hover:bg-red-800">🏠 Dashboard</a>
+
+                    <!-- MODIFIKASI: Menu Jadwal Pengajar -->
+                    <a href="{{ route('pengajar.jadwal.index') }}" class="block py-3 px-6 hover:bg-red-800">📅 Jadwal Mengajar</a>
 
                     <!-- MENU ABSENSI DENGAN DROPDOWN -->
                     <div class="relative">
@@ -125,7 +129,7 @@
         }
 
         window.onload = function() {
-            if (window.location.href.includes('admin/siswa')) {
+            if (window.location.href.includes('admin/siswa') || window.location.href.includes('admin/pendaftaran')) {
                 document.getElementById('siswa-menu').classList.remove('hidden');
                 document.getElementById('siswa-arrow').classList.add('rotate-180');
             }

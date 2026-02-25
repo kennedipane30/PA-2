@@ -36,8 +36,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.1.0                # Letakkan di sini
   shared_preferences: ^2.2.2  # Letakkan di sini
-  intl: ^0.18.1 
+  intl: ^0.19.0 
   image_picker: ^1.0.4
+  table_calendar: ^3.1.0
 
 dev_dependencies:
   flutter_test:

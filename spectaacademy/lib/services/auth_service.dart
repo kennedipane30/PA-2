@@ -103,6 +103,17 @@ class AuthService {
     return await request.send();
   }
 
+  // AMBIL JADWAL UNTUK SISWA (Hanya kelas yang sudah AKTIF)
+  static Future<http.Response> getSiswaSchedule(String token) async {
+    return await http.get(
+      Uri.parse('$baseUrl/schedules'),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+  }
+
   // 9. LOGOUT
   static Future<http.Response> logout(String token) async {
     return await http.post(

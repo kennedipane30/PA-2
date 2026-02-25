@@ -64,4 +64,18 @@ public function prosesAktivasi(Request $request, $id)
 
     return redirect()->route('admin.siswa.pendaftaran')->with('success', 'Siswa berhasil diaktifkan!');
 }
+
+public function storeJadwal(Request $request) {
+    $request->validate([
+        'class_id' => 'required',
+        'teacher_id' => 'required',
+        'title' => 'required',
+        'date' => 'required|date',
+        'start_time' => 'required',
+        'end_time' => 'required',
+    ]);
+
+    \App\Models\Schedule::create($request->all());
+    return back()->with('success', 'Jadwal berhasil diterbitkan!');
+}
 }
