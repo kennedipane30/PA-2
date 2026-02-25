@@ -38,10 +38,14 @@
                         </button>
 
                         <div id="siswa-menu" class="hidden bg-red-950/30">
+                            <!-- Sub-menu 1: Semua Siswa -->
                             <a href="{{ route('admin.siswa.index') }}" class="block py-2 pl-12 pr-6 text-sm hover:text-yellow-400">
                                 ○ Semua Siswa
                             </a>
-                            <a href="{{ route('admin.siswa.index') }}" class="block py-2 pl-12 pr-6 text-sm hover:text-yellow-400 flex justify-between items-center">
+
+                            <!-- Sub-menu 2: Tambah Kelas (Antrean Verifikasi) -->
+                            <!-- PERBAIKAN: Nama route disesuaikan dengan web.php -->
+                            <a href="{{ route('admin.siswa.pendaftaran') }}" class="block py-2 pl-12 pr-6 text-sm hover:text-yellow-400 flex justify-between items-center">
                                 <span>○ Tambah Kelas</span>
                                 @php
                                     $pendingCount = \App\Models\Enrollment::where('status', 'pending')->count();
@@ -121,12 +125,10 @@
         }
 
         window.onload = function() {
-            // Auto open Admin Dropdown
-            if (window.location.href.includes('admin/siswa') || window.location.href.includes('admin/pendaftaran')) {
+            if (window.location.href.includes('admin/siswa')) {
                 document.getElementById('siswa-menu').classList.remove('hidden');
                 document.getElementById('siswa-arrow').classList.add('rotate-180');
             }
-            // Auto open Pengajar Dropdown
             if (window.location.href.includes('pengajar/absensi')) {
                 document.getElementById('pengajar-menu').classList.remove('hidden');
                 document.getElementById('pengajar-arrow').classList.add('rotate-180');
