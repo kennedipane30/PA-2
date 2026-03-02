@@ -25,7 +25,8 @@ class ClassContentSeeder extends Seeder
                 if ($s == 'Tryout') {
                     Tryout::create([
                         'class_id' => $classId,
-                        'title'    => 'Simulasi Tryout ' . $this->getProgramName($classId)
+                        'title'    => 'Simulasi Tryout ' . $this->getProgramName($classId),
+                        'duration' => 60 // MODIFIKASI: Ditambahkan durasi agar tidak eror null
                     ]);
                 } else {
                     // Selain itu, masukkan ke tabel materials
@@ -38,7 +39,9 @@ class ClassContentSeeder extends Seeder
         }
     }
 
-    // Fungsi pembantu untuk nama tryout
+    /**
+     * Fungsi pembantu untuk nama tryout
+     */
     private function getProgramName($id) {
         $names = [1 => 'Abdi Negara', 2 => 'PTN', 3 => 'Reguler', 4 => 'Favorit'];
         return $names[$id];

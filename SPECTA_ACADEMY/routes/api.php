@@ -11,14 +11,14 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// --- PUBLIC ROUTES ---
+// --- 1. PUBLIC ROUTES ---
 Route::post('/register', [AuthController::class, 'registerSiswa']);
 Route::post('/verify-registration', [AuthController::class, 'verifyRegistration']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/galeri', [GaleriController::class, 'apiIndex']);
 
 
-// --- PROTECTED ROUTES ---
+// --- 2. PROTECTED ROUTES ---
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/user', function (Request $request) {
@@ -29,7 +29,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
 
-    // --- KHUSUS ROLE SISWA ---
+    // --- 3. KHUSUS ROLE SISWA ---
     Route::middleware('role:siswa')->group(function () {
 
         Route::post('/class/content', [AuthController::class, 'getClassContent']);
@@ -37,10 +37,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/class/join', [AuthController::class, 'joinClass']);
         Route::get('/schedules', [AuthController::class, 'getSiswaSchedule']);
 
-        // MODIFIKASI: Tryout dimasukkan ke dalam group siswa (Authorization)
+        // MODIFIKASI: Tambahkan rute untuk mengambil butir soal
+        Route::post('/tryout/questions', [AuthController::class, 'getQuestions']);
+
         Route::post('/tryout/submit', [AuthController::class, 'submitTryout']);
         Route::get('/tryout/download/{id}', [AuthController::class, 'downloadPembahasan']);
-
     });
-
 });

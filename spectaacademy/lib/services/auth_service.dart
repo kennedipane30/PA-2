@@ -124,4 +124,37 @@ class AuthService {
       },
     );
   }
+
+  // 8. AMBIL DAFTAR SOAL BERDASARKAN ID TRYOUT
+  static Future<http.Response> getQuestions(int tryoutId, String token) async {
+    return await http.post(
+      Uri.parse('$baseUrl/tryout/questions'), // Pastikan rute ini ada di api.php
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: {'tryout_id': tryoutId.toString()},
+    );
+  }
+
+  // 9. KIRIM JAWABAN & HITUNG SKOR (INI YANG TADI MERAH)
+  static Future<http.Response> submitTryout({
+    required int tryoutId,
+    required Map<int, String> answers,
+    required String token,
+  }) async {
+    // Kita gunakan jsonEncode karena data answers berbentuk Map (Object)
+    return await http.post(
+      Uri.parse('$baseUrl/tryout/submit'),
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'tryout_id': tryoutId,
+        'answers': answers,
+      }),
+    );
+  }
 }
