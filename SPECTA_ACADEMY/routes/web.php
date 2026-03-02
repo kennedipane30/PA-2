@@ -19,7 +19,6 @@ use App\Http\Controllers\Pengajar\TryoutController;
 |--------------------------------------------------------------------------
 */
 
-// --- JALUR UTAMA & LOGIN ---
 Route::get('/', function () { return redirect()->route('login'); });
 Route::get('/login', [WebAuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [WebAuthController::class, 'login']);
@@ -29,14 +28,14 @@ Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
 // --- 1. GROUP ADMINISTRASI (Role: Admin) ---
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
 
-    // Dashboard Utama
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
-    // Manajemen Pengumuman & Galeri
-    // Route::get('/pengumuman', [PengumumanController::class, 'index'])->name('pengumuman.index');
-    // Route::post('/pengumuman', [PengumumanController::class, 'store'])->name('pengumuman.store');
-    // Route::delete('/pengumuman/{id}', [PengumumanController::class, 'destroy'])->name('pengumuman.destroy');
+    // Manajemen Pengumuman
+    Route::get('/pengumuman', [PengumumanController::class, 'index'])->name('pengumuman.index');
+    Route::post('/pengumuman', [PengumumanController::class, 'store'])->name('pengumuman.store');
+    Route::delete('/pengumuman/{id}', [PengumumanController::class, 'destroy'])->name('pengumuman.destroy');
 
+    // Manajemen Galeri
     Route::get('/galeri', [GaleriController::class, 'index'])->name('galeri.index');
     Route::post('/galeri', [GaleriController::class, 'store'])->name('galeri.store');
     Route::get('/galeri/edit/{id}', [GaleriController::class, 'edit'])->name('galeri.edit');
@@ -65,20 +64,21 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 // --- 2. GROUP PENGAJAR (Role: Pengajar) ---
 Route::middleware(['auth', 'role:pengajar'])->prefix('pengajar')->name('pengajar.')->group(function () {
 
-    // Dashboard & Jadwal
     Route::get('/dashboard', [PengajarDashboardController::class, 'index'])->name('dashboard');
     Route::get('/jadwal-mengajar', [PengajarDashboardController::class, 'jadwalSaya'])->name('jadwal.index');
 
-    // Absensi Per Kelas (Dinamis)
+    // Absensi Per Kelas
     Route::get('/absensi', [PengajarDashboardController::class, 'absensi'])->name('absensi.index');
     Route::get('/absensi/{class_id}', [PengajarDashboardController::class, 'showAbsensi'])->name('absensi.show');
-
-    // MODIFIKASI: Menambahkan rute simpan absensi (POST)
     Route::post('/absensi/simpan', [PengajarDashboardController::class, 'storeAbsensi'])->name('absensi.store');
 
-    // Materi & Evaluasi
+    // Materi
     Route::get('/materi', [MateriController::class, 'index'])->name('materi.index');
     Route::post('/materi/upload', [MateriController::class, 'store'])->name('materi.store');
+
+    // MODIFIKASI: Tryout (Sesuai dengan pemanggilan di file Blade)
     Route::get('/soal-tryout', [TryoutController::class, 'buatSoal'])->name('tryout.create');
+    Route::post('/soal-tryout/import', [TryoutController::class, 'importSoal'])->name('tryout.import');
+
     Route::get('/nilai', [TryoutController::class, 'lihatNilai'])->name('tryout.nilai');
 });

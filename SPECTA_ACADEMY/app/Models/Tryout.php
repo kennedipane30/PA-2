@@ -3,6 +3,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 class Tryout extends Model {
-    protected $primaryKey = 'tryoutsID'; // Sesuai ERD
-    protected $fillable = ['class_id', 'title'];
+    protected $primaryKey = 'tryoutsID';
+    protected $fillable = ['class_id', 'title', 'duration'];
+    public function questions() { return $this->hasMany(Question::class, 'tryout_id', 'tryoutsID'); }
 }
