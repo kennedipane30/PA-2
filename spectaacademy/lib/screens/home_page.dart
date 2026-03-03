@@ -14,7 +14,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final Color spektaRed = const Color(0xFF990000);
   
-  // Variabel untuk Galeri
   List galeriData = [];
   late PageController _pageController;
   int _currentPage = 0;
@@ -34,24 +33,25 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  // Mengambil data dari API Laravel
   Future<void> fetchGaleri() async {
     try {
+      // Mengambil data galeri dari API Laravel
       final response = await http.get(Uri.parse('http://10.0.2.2:8000/api/galeri'));
       if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
         setState(() {
-          galeriData = jsonDecode(response.body)['data'];
+          // Mengambil array dari 'data' sesuai format JSON kita
+          galeriData = data['data'] ?? [];
         });
         if (galeriData.isNotEmpty) {
           _startAutoSlide();
         }
       }
     } catch (e) {
-      print("Error fetching galeri: $e");
+      debugPrint("Error fetching galeri: $e");
     }
   }
 
-  // Logika Bergeser Otomatis Selang 10 Detik
   void _startAutoSlide() {
     _timer = Timer.periodic(const Duration(seconds: 10), (Timer timer) {
       if (_currentPage < galeriData.length - 1) {
@@ -77,7 +77,7 @@ class _HomePageState extends State<HomePage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // --- HEADER MERAH (Tanpa Search & Tanpa Kelas 12 IPA) ---
+            // --- HEADER MERAH ---
             Container(
               width: double.infinity,
               padding: const EdgeInsets.only(top: 60, left: 25, right: 25, bottom: 35),
@@ -91,14 +91,8 @@ class _HomePageState extends State<HomePage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    "Hai, ${widget.userName}", 
-                    style: const TextStyle(
-                      color: Colors.white, 
-                      fontSize: 22, 
-                      fontWeight: FontWeight.bold
-                    )
-                  ),
+                  Text("Hai, ${widget.userName}", 
+                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
                   const Row(
                     children: [
                       Icon(Icons.notifications_none, color: Colors.white),
@@ -115,7 +109,7 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- 1. LAYANAN SPEKTA (Sekarang di Paling Atas) ---
+                  // --- 1. LAYANAN SPEKTA ---
                   const Text("Layanan Spekta", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 15),
                   Row(
@@ -130,7 +124,7 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 35),
 
-                  // --- 2. BANNER PROMO (Di Bawah Layanan) ---
+                  // --- 2. BANNER PROMO ---
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
@@ -165,41 +159,61 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 35),
 
-                  // --- 3. SECTION GALERI KEGIATAN (Auto-Slide 10 Detik) ---
+                  // --- 3. SECTION GALERI KEGIATAN (DIPERBAIKI) ---
                   if (galeriData.isNotEmpty) ...[
-                    const Center(
-                      child: Text("Kegiatan Spekta Terbaru", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    ),
+                    const Center(child: Text("Kegiatan Spekta Terbaru", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
                     const SizedBox(height: 15),
                     SizedBox(
                       height: 240,
                       child: PageView.builder(
                         controller: _pageController,
-                        onPageChanged: (index) => setState(() => _currentPage = index),
                         itemCount: galeriData.length,
+                        onPageChanged: (index) => _currentPage = index,
                         itemBuilder: (context, index) {
                           var item = galeriData[index];
+                          
+                          // SOLUSI: Menggunakan IP 10.0.2.2 untuk emulator dan folder storage
+                          String imageUrl = 'http://10.0.2.2:8000/storage/${item['foto']}';
+                          
                           return Column(
                             children: [
-                              // Judul Center di Atas Gambar
-                              Text(
-                                item['judul'], 
+                              Text(item['judul'], 
                                 style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF990000)),
-                                textAlign: TextAlign.center,
-                              ),
+                                textAlign: TextAlign.center),
                               const SizedBox(height: 12),
                               Expanded(
                                 child: Container(
-                                  margin: const EdgeInsets.symmetric(horizontal: 5),
+                                  margin: const EdgeInsets.symmetric(horizontal: 10),
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(20),
-                                    image: DecorationImage(
-                                      image: NetworkImage('http://10.0.2.2:8000/storage/${item['foto']}'),
-                                      fit: BoxFit.cover
+                                    boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: const Offset(0, 4))],
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: Image.network(
+                                      imageUrl,
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      // Handler saat loading
+                                      loadingBuilder: (context, child, loadingProgress) {
+                                        if (loadingProgress == null) return child;
+                                        return const Center(child: CircularProgressIndicator(color: Color(0xFF990000)));
+                                      },
+                                      // HANDLER ERROR AGAR TIDAK BLANK ABU-ABU
+                                      errorBuilder: (context, error, stackTrace) {
+                                        debugPrint("Gagal muat gambar dari: $imageUrl");
+                                        return Container(
+                                          color: Colors.grey[200],
+                                          child: const Center(child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                                              Text("Gambar gagal dimuat", style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                            ],
+                                          )),
+                                        );
+                                      },
                                     ),
-                                    boxShadow: [
-                                      BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 4))
-                                    ]
                                   ),
                                 ),
                               ),
@@ -219,7 +233,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Widget Helper untuk Ikon Layanan
   Widget _buildMenuIcon(IconData icon, String label, Color color) {
     return Column(
       children: [

@@ -12,7 +12,8 @@ use App\Http\Controllers\Admin\ManajemenPengajarController;
 use App\Http\Controllers\Pengajar\PengajarDashboardController;
 use App\Http\Controllers\Pengajar\MateriController;
 use App\Http\Controllers\Pengajar\TryoutController;
-
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Storage;
 /*
 |--------------------------------------------------------------------------
 | Web Routes - Spekta Academy
@@ -30,10 +31,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
-    // Manajemen Pengumuman
-    Route::get('/pengumuman', [PengumumanController::class, 'index'])->name('pengumuman.index');
-    Route::post('/pengumuman', [PengumumanController::class, 'store'])->name('pengumuman.store');
-    Route::delete('/pengumuman/{id}', [PengumumanController::class, 'destroy'])->name('pengumuman.destroy');
+    // // Manajemen Pengumuman
+    // Route::get('/pengumuman', [PengumumanController::class, 'index'])->name('pengumuman.index');
+    // Route::post('/pengumuman', [PengumumanController::class, 'store'])->name('pengumuman.store');
+    // Route::delete('/pengumuman/{id}', [PengumumanController::class, 'destroy'])->name('pengumuman.destroy');
 
     // Manajemen Galeri
     Route::get('/galeri', [GaleriController::class, 'index'])->name('galeri.index');
@@ -81,4 +82,20 @@ Route::middleware(['auth', 'role:pengajar'])->prefix('pengajar')->name('pengajar
     Route::post('/soal-tryout/import', [TryoutController::class, 'importSoal'])->name('tryout.import');
 
     Route::get('/nilai', [TryoutController::class, 'lihatNilai'])->name('tryout.nilai');
+});
+
+Route::get('/view-galeri/{filename}', function ($filename) {
+    $path = 'public/galeri/' . $filename;
+
+    if (!Storage::exists($path)) {
+        abort(404);
+    }
+
+    $file = Storage::get($path);
+    $type = Storage::mimeType($path);
+
+    $response = Response::make($file, 200);
+    $response->header("Content-Type", $type);
+
+    return $response;
 });

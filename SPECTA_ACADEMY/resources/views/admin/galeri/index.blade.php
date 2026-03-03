@@ -17,7 +17,7 @@
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
         @foreach($galeri as $row)
         <div class="bg-gray-50 rounded-xl overflow-hidden shadow-sm border group">
-            <img src="{{ asset('storage/'.$row->foto) }}" class="h-40 w-full object-cover">
+            <img src="{{ url('/view-galeri/' . basename($row->foto)) }}" class="w-full h-32 object-cover rounded">
             <div class="p-4">
                 <h4 class="font-bold text-sm">{{ $row->judul }}</h4>
                 <p class="text-[10px] text-gray-400 mt-1 italic">Diunggah: {{ $row->created_at->format('d M Y') }}</p>

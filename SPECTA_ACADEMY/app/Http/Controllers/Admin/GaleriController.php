@@ -68,15 +68,22 @@ class GaleriController extends Controller
 
     // 6. API UNTUK MOBILE (Siswa - Muncul 14 Hari Saja)
     public function apiIndex() {
-        $batasWaktu = now()->subDays(14); // Syarat 14 hari
+        $batasWaktu = now()->subDays(14);
 
-        $galeri = Gallery::where('created_at', '>=', $batasWaktu)
+        $galeri = \App\Models\Gallery::where('created_at', '>=', $batasWaktu)
                         ->latest()
-                        ->get();
+                        ->get()
+                        ->map(function($item) {
+                            // KITA GUNAKAN JALUR RESMI YANG BARU DIBUAT
+                            // Ambil hanya nama filenya saja dari kolom foto
+                            $filename = basename($item->foto);
+                            $item->foto_url = "http://10.0.2.2:8000/view-galeri/" . $filename;
+                            return $item;
+                        });
 
         return response()->json([
             'status' => 'success',
-            'data' => $galeri
+            'data'   => $galeri
         ]);
     }
 }
