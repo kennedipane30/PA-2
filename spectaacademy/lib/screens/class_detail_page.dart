@@ -4,7 +4,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../services/auth_service.dart';
-import 'tryout_detail_page.dart'; // IMPORT BARU
+import 'tryout_detail_page.dart'; 
 
 class ClassDetailPage extends StatefulWidget {
   final int classId;
@@ -37,23 +37,33 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
     _fetchDetail();
   }
 
+  // 1. Fungsi Ambil Konten (Beda ID Beda Isi)
   Future<void> _fetchDetail() async {
     try {
       var resp = await AuthService.getClassContent(widget.classId, widget.token);
       if (resp.statusCode == 200) {
         var data = jsonDecode(resp.body);
+        if (mounted) {
+          setState(() {
+            status = data['enroll_status'] ?? "none";
+            materi = data['materi'] ?? [];
+            tryouts = data['tryouts'] ?? []; 
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetch detail: $e");
+    } finally {
+      // Pastikan loading berhenti apapun yang terjadi
+      if (mounted) {
         setState(() {
-          status = data['enroll_status'];
-          materi = data['materi'];
-          tryouts = data['tryouts'] ?? []; 
           isLoading = false;
         });
       }
-    } catch (e) {
-      print("Error fetch detail: $e");
     }
   }
 
+  // 2. Fungsi Kirim Data & Upload Bukti ke Laravel
   void _processUpload(File image) async {
     showDialog(
       context: context,
@@ -66,13 +76,13 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
       var response = await http.Response.fromStream(streamedResp);
 
       if (!mounted) return;
-      Navigator.pop(context);
+      Navigator.pop(context); // Tutup Loading
 
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(backgroundColor: Colors.green, content: Text("Pendaftaran Berhasil! Menunggu Verifikasi Admin."))
         );
-        _fetchDetail();
+        _fetchDetail(); // Refresh gembok materi
       } else {
         final errorData = jsonDecode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -82,13 +92,15 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context);
+      debugPrint("Error: $e");
     }
   }
 
+  // 3. Form Pendaftaran (Nama & NISN Otomatis)
   void _showDaftarForm() {
     File? _imageFile;
     final nameController = TextEditingController(text: widget.userData['name']);
-    final nisnController = TextEditingController(text: widget.userData['student']['nisn'] ?? "-");
+    final nisnController = TextEditingController(text: widget.userData['student']?['nisn'] ?? "-");
 
     showModalBottomSheet(
       context: context,
@@ -103,9 +115,12 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
               children: [
                 const Text("Konfirmasi Pendaftaran", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const Divider(),
+                
                 _buildField(nameController, "Nama Pendaftar", Icons.person, true),
-                _buildField(nisnController, "NISN Anda", Icons.numbers, true),
+                _buildField(nisnController, "NISN Siswa", Icons.numbers, true),
+                
                 const SizedBox(height: 20),
+
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(15),
@@ -114,11 +129,13 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
                     children: [
                       const Text("Silakan transfer ke Rekening Pusat:", style: TextStyle(fontSize: 12)),
                       Text("BANK MANDIRI: 123-456-7890", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: spektaRed)),
-                      const Text("a/n Spekta Academy Indonesia", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      const Text("a/n Spekta Academy Indonesia", style: TextStyle(fontSize: 12)),
                     ],
                   ),
                 ),
+                
                 const SizedBox(height: 20),
+
                 InkWell(
                   onTap: () async {
                     final picker = ImagePicker();
@@ -127,12 +144,13 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
                   },
                   child: Container(
                     height: 150, width: double.infinity,
-                    decoration: BoxDecoration(border: Border.all(color: Colors.grey[100]!), borderRadius: BorderRadius.circular(15)),
+                    decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.grey.shade300)),
                     child: _imageFile == null 
-                      ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_photo_alternate, size: 40, color: spektaRed), const Text("Klik Upload Bukti Transfer", style: TextStyle(fontSize: 12, color: Colors.grey))])
+                      ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_photo_alternate, size: 40, color: spektaRed), const Text("Klik Upload Bukti Transfer", style: TextStyle(fontSize: 12))])
                       : ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.file(_imageFile!, fit: BoxFit.cover)),
                   ),
                 ),
+
                 const SizedBox(height: 25),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: spektaRed, minimumSize: const Size(double.infinity, 55), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
@@ -170,19 +188,21 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
                 children: [
                   _buildStatusBanner(),
                   
+                  // --- BAGIAN TRYOUT (HANYA TAMPIL JIKA ADA DATA) ---
                   if (tryouts.isNotEmpty) ...[
                     const Padding(
                       padding: EdgeInsets.only(left: 20, top: 20),
                       child: Text("Simulasi Try-Out", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     ),
-                    _buildListContent(tryouts, isRegistered, Icons.assignment, Colors.orange, true), // isTryout = true
+                    _buildListContent(tryouts, isRegistered, Icons.assignment, Colors.orange, true),
                   ],
 
+                  // --- BAGIAN MATERI VIDEO ---
                   const Padding(
                     padding: EdgeInsets.only(left: 20, top: 20),
                     child: Text("Materi Video Pembelajaran", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
-                  _buildListContent(materi, isRegistered, Icons.play_circle_fill, Colors.green, false), // isTryout = false
+                  _buildListContent(materi, isRegistered, Icons.play_circle_fill, Colors.green, false),
                   
                   const SizedBox(height: 120), 
                 ],
@@ -194,8 +214,9 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
     );
   }
 
-  // MODIFIKASI: Menambahkan parameter isTryout pada helper
   Widget _buildListContent(List items, bool isRegistered, IconData activeIcon, Color activeColor, bool isTryout) {
+    if (items.isEmpty) return const Padding(padding: EdgeInsets.all(20), child: Text("Belum ada konten tersedia."));
+    
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
       shrinkWrap: true, 
@@ -212,23 +233,16 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
             title: Text(items[index]['title'], style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text(isRegistered ? "Klik untuk akses" : "Akses Terkunci"),
             onTap: isRegistered ? () {
-              // LOGIKA BARU: Jika yang diklik adalah Tryout
               if (isTryout) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => TryoutDetailPage(
-                      tryoutData: items[index], 
-                      token: widget.token
-                    ),
-                  ),
-                );
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (context) => TryoutDetailPage(tryoutData: items[index], token: widget.token)
+                ));
               } else {
                 // Aksi buka Video Materi
               }
             } : () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Silakan daftar untuk melihat konten!"))
+                const SnackBar(content: Text("Silakan daftar untuk melihat materi!"))
               );
             },
           ),
@@ -260,12 +274,12 @@ class _ClassDetailPageState extends State<ClassDetailPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text("Harga Program", style: TextStyle(color: Colors.grey, fontSize: 12)),
-              Text("Rp 900.000", style: TextStyle(color: Color(0xFF990000), fontSize: 20, fontWeight: FontWeight.bold)),
+              const Text("Harga Program", style: TextStyle(color: Colors.grey, fontSize: 12)),
+              Text("Rp 900.000", style: TextStyle(color: spektaRed, fontSize: 20, fontWeight: FontWeight.bold)),
             ],
           ),
           ElevatedButton(

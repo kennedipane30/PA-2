@@ -42,35 +42,34 @@ class TryoutController extends Controller
             ]);
 
             $file = fopen($request->file('file_csv')->getRealPath(), 'r');
-            fgetcsv($file); // Melewati baris header (No, Pertanyaan, dll)
+            fgetcsv($file, 2000, ";"); // Skip header baris 1
 
-            $count = 0;
-            // PERBAIKAN: Gunakan ";" sebagai separator karena Excel Indonesia pakai titik koma
-            while (($row = fgetcsv($file, 2000, ";")) !== FALSE) {
+           $count = 0;
+        // Gunakan delimiter ";" sesuai format Excel Indonesia kamu
+        while (($row = fgetcsv($file, 2000, ";")) !== FALSE) {
 
-                // Cek apakah kolomnya lengkap (Minimal ada Pertanyaan sampai Kunci)
-                if (count($row) < 7) {
-                    // Jika gagal pakai ";", kita coba pakai "," (cadangan)
-                    $row = str_getcsv($row[0], ",");
-                    if (count($row) < 7) continue; // Lewati jika baris kosong atau rusak
-                }
-
-                Question::create([
-                    'tryout_id'      => $tryout->tryoutsID,
-                    'question'       => $row[1], // Kolom B (Pertanyaan)
-                    'option_a'       => $row[2], // Kolom C
-                    'option_b'       => $row[3], // Kolom D
-                    'option_c'       => $row[4], // Kolom E
-                    'option_d'       => $row[5], // Kolom F
-                    'correct_answer' => trim(strtoupper($row[6])), // Kolom G (Kunci A/B/C/D)
-                    'explanation'    => $row[7] ?? null, // Kolom H (Pembahasan)
-                ]);
-                $count++;
+            // LOGIKA PEMBERSIH:
+            // Jika kolom B (Pertanyaan) kosong, atau baris ini isinya cuma tanda ;;;; maka SKIP!
+            if (!isset($row[1]) || empty(trim($row[1])) || trim($row[1]) == '') {
+                continue;
             }
+
+            Question::create([
+                'tryout_id'      => $tryout->tryoutsID,
+                'question'       => $row[1],
+                'option_a'       => $row[2] ?? '-',
+                'option_b'       => $row[3] ?? '-',
+                'option_c'       => $row[4] ?? '-',
+                'option_d'       => $row[5] ?? '-',
+                'correct_answer' => trim(strtoupper($row[6] ?? 'A')),
+                'explanation'    => $row[7] ?? null,
+            ]);
+            $count++;
+        }
             fclose($file);
 
             DB::commit();
-            return redirect()->back()->with('success', "Berhasil! Tryout diterbitkan dengan $count soal.");
+            return redirect()->back()->with('success', "Berhasil! Tryout diterbitkan dengan $count soal asli.");
 
         } catch (\Exception $e) {
             DB::rollBack();
