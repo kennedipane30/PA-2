@@ -17,6 +17,13 @@ Route::post('/verify-registration', [AuthController::class, 'verifyRegistration'
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/galeri', [GaleriController::class, 'apiIndex']);
 
+// --- JALUR LUPA PASSWORD ---
+// 1. Kirim nomor WA untuk dapet OTP
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+
+// 2. Kirim OTP dan Password Baru untuk Reset
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+
 
 // --- 2. PROTECTED ROUTES ---
 Route::middleware('auth:sanctum')->group(function () {

@@ -50,6 +50,93 @@ class AuthController extends Controller {
         return response()->json(['status' => 'success', 'token' => $user->createToken('token')->plainTextToken, 'user' => $user->load('student')]);
     }
 
+    /**
+ * FUNGSI LUPA PASSWORD - STEP 1 (Kirim OTP)
+ */
+public function forgotPassword(Request $request): JsonResponse {
+    $request->validate([
+        'phone' => 'required'
+    ]);
+
+    // 1. Cari user berdasarkan nomor telepon (Sesuai ERD: kolom phone)
+    $user = User::where('phone', $request->phone)->first();
+
+    if (!$user) {
+        return response()->json(['status' => 'error', 'message' => 'Nomor WhatsApp tidak terdaftar!'], 404);
+    }
+
+    // 2. Generate OTP 6 Digit
+    $otp = rand(100000, 999999);
+
+    // 3. Simpan/Update ke tabel otp_codes
+    OtpCode::updateOrCreate(
+        ['user_id' => $user->usersID],
+        [
+            'otp' => $otp,
+            'valid_until' => Carbon::now()->addMinutes(10)
+        ]
+    );
+
+    // 4. SIMULASI KIRIM WA (Sesuai kesepakatan: Matikan Fonnte sementara)
+    /*
+    Http::withHeaders(['Authorization' => env('FONNTE_TOKEN')])->post('https://api.fonnte.com/send', [
+        'target' => $request->phone,
+        'message' => "KODE RESET PASSWORD SPEKTA ANDA: $otp. Jangan berikan kode ini kepada siapapun.",
+    ]);
+    */
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Kode OTP Reset Password berhasil dikirim',
+        'otp' => $otp // Tampilkan untuk simulasi testing
+    ]);
+}
+
+/**
+ * FUNGSI LUPA PASSWORD - STEP 2 (Update Password Baru)
+ */
+public function resetPassword(Request $request): JsonResponse {
+    $v = Validator::make($request->all(), [
+        'phone' => 'required',
+        'otp' => 'required|numeric',
+        'password' => [
+            'required', 'confirmed', 'min:8',
+            'regex:/[a-z]/', 'regex:/[A-Z]/', 'regex:/[0-9]/', 'regex:/[@$!%*#?&]/'
+        ],
+    ], [
+        'password.regex' => 'Password baru wajib ada Kapital, Huruf Biasa, Angka, dan Simbol!'
+    ]);
+
+    if ($v->fails()) return response()->json(['status' => 'error', 'message' => $v->errors()->first()], 422);
+
+    // 1. Cari User
+    $user = User::where('phone', $request->phone)->first();
+    if (!$user) return response()->json(['status' => 'error', 'message' => 'User tidak ditemukan'], 404);
+
+    // 2. Validasi OTP
+    $otpRecord = OtpCode::where('user_id', $user->usersID)
+                        ->where('otp', $request->otp)
+                        ->where('valid_until', '>', now())
+                        ->first();
+
+    if (!$otpRecord) {
+        return response()->json(['status' => 'error', 'message' => 'Kode OTP Salah atau Kadaluarsa'], 401);
+    }
+
+    // 3. UPDATE PASSWORD (Bcrypt Enkripsi - Syarat Keamanan)
+    $user->update([
+        'password' => bcrypt($request->password)
+    ]);
+
+    // 4. Hapus OTP setelah sukses
+    $otpRecord->delete();
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Password berhasil diperbarui! Silakan login kembali.'
+    ], 200);
+}
+
     // 4. LENGKAPI PROFIL
     public function updateProfile(Request $request): JsonResponse {
         $v = Validator::make($request->all(), ['parent_name' => 'required|string', 'alamat' => 'required|string', 'wa_ortu' => 'required', 'nisn' => 'required', 'dob' => 'required|date']);

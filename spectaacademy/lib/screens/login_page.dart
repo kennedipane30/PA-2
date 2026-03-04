@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'register_page.dart'; 
 import 'main_screen.dart';   
+import 'forgot_password_page.dart'; // 1. Import halaman lupa password
 import 'dart:convert';
 
 class LoginPage extends StatefulWidget {
@@ -39,14 +40,12 @@ class _LoginPageState extends State<LoginPage> {
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body);
         
-        // --- MODIFIKASI DI SINI ---
-        // Mengirim data user lengkap (userProfileData) ke MainScreen
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => MainScreen(
             userName: data['user']['name'], 
             token: data['token'],
-            userProfileData: data['user'], // Menambahkan baris ini
+            userProfileData: data['user'], 
           )),
           (route) => false,
         );
@@ -119,7 +118,22 @@ class _LoginPageState extends State<LoginPage> {
                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
               ),
             ),
-            const SizedBox(height: 30),
+            
+            // --- MODIFIKASI: TOMBOL LUPA PASSWORD ---
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
+                );
+              },
+              child: const Text(
+                "Lupa Password?",
+                style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.bold),
+              ),
+            ),
+            
+            const SizedBox(height: 10),
             TextButton(
               onPressed: () {
                 Navigator.push(

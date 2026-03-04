@@ -29,4 +29,21 @@ class AuthService {
     return await http.post(Uri.parse('$baseUrl/tryout/submit'), headers: {'Accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
       body: jsonEncode({'tryout_id': tryoutId, 'answers': stringAnswers}));
   }
+  // 1. Kirim nomor WA untuk minta kode OTP
+static Future<http.Response> forgotPassword(String phone) async {
+  return await http.post(
+    Uri.parse('$baseUrl/forgot-password'),
+    headers: {'Accept': 'application/json'},
+    body: {'phone': phone},
+  );
+}
+
+// 2. Kirim OTP dan Password Baru untuk Reset
+static Future<http.Response> resetPassword(Map<String, dynamic> data) async {
+  return await http.post(
+    Uri.parse('$baseUrl/reset-password'),
+    headers: {'Accept': 'application/json'},
+    body: data,
+  );
+}
 }
