@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import 'main_screen.dart'; 
-import 'dart:convert'; 
+import 'login_page.dart'; // Import halaman login
+import 'dart:convert';
 
 class OtpPage extends StatefulWidget {
-  final String email;
-  const OtpPage({super.key, required this.email});
+  final String name;
+  final String otpSimulasi;
+
+  const OtpPage({super.key, required this.name, required this.otpSimulasi});
 
   @override
   State<OtpPage> createState() => _OtpPageState();
@@ -17,40 +19,36 @@ class _OtpPageState extends State<OtpPage> {
   String currentText = "";
 
   void handleVerify() async {
-    if (otpCtrl.text.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Masukkan 6 digit kode OTP lengkap"))
-      );
-      return;
-    }
+    if (otpCtrl.text.length < 6) return;
 
-    showDialog(
-      context: context, 
-      barrierDismissible: false, 
-      builder: (context) => const Center(child: CircularProgressIndicator(color: Color(0xFF990000)))
-    );
+    // Tampilkan Loading
+    showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator(color: Color(0xFF990000))));
 
-    var resp = await AuthService.verifyOtp(widget.email, otpCtrl.text);
-    
-    if (!context.mounted) return;
-    Navigator.pop(context); 
+    // Panggil API Verifikasi Registrasi
+    var resp = await AuthService.verifyRegistration(widget.name, otpCtrl.text);
+
+    if (!mounted) return;
+    Navigator.pop(context); // Tutup Loading
 
     if (resp.statusCode == 200) {
-      final data = jsonDecode(resp.body);
-      String nameFromDb = data['user']['name'] ?? "Siswa Spekta";
-      String tokenFromDb = data['token']; 
+      // 1. Tampilkan Notifikasi Sukses
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.green, 
+          content: Text("Akun Berhasil Diaktifkan! Silakan Login menggunakan Nama & Password.")
+        )
+      );
 
+      // 2. ARAHKAN LANGSUNG KE HALAMAN LOGIN
+      // Kita hapus semua tumpukan halaman (stack) agar siswa tidak bisa kembali ke OTP
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => MainScreen(
-          userName: nameFromDb, 
-          token: tokenFromDb 
-        )),
+        MaterialPageRoute(builder: (context) => const LoginPage()),
         (route) => false,
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(backgroundColor: Colors.red, content: Text("Kode OTP Salah atau sudah Kadaluarsa!"))
+        const SnackBar(backgroundColor: Colors.red, content: Text("Kode OTP Salah!"))
       );
     }
   }
@@ -59,7 +57,7 @@ class _OtpPageState extends State<OtpPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Verifikasi Akun"),
+        title: const Text("Aktivasi Akun"),
         backgroundColor: spektaRed,
         foregroundColor: Colors.white,
       ),
@@ -68,67 +66,33 @@ class _OtpPageState extends State<OtpPage> {
         child: Column(
           children: [
             const SizedBox(height: 20),
-            const Icon(Icons.mark_chat_read_outlined, size: 80, color: Color(0xFF990000)),
+            const Icon(Icons.verified_user_outlined, size: 80, color: Color(0xFF990000)),
             const SizedBox(height: 30),
             Text(
-              "Masukkan 6 digit kode yang dikirim ke WhatsApp:",
+              "Halo ${widget.name}, masukkan kode OTP yang dikirim ke WhatsApp Anda:",
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[700], fontSize: 15),
+              style: TextStyle(color: Colors.grey[700], fontSize: 16),
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 10),
             Text(
-              widget.email,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              "SIMULASI: ${widget.otpSimulasi}",
+              style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 18),
             ),
             const SizedBox(height: 50),
             
-            // --- CUSTOM OTP BOXES ---
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                // Layer 1: Baris Kotak-Kotak Merah
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(6, (index) {
-                    return Container(
-                      width: 45,
-                      height: 55,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: currentText.length > index ? spektaRed : Colors.grey.shade300,
-                          width: 2,
-                        ),
-                        boxShadow: currentText.length > index 
-                          ? [BoxShadow(color: spektaRed.withOpacity(0.2), blurRadius: 5)] 
-                          : [],
-                      ),
-                      child: Center(
-                        child: Text(
-                          currentText.length > index ? currentText[index] : "",
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: spektaRed),
-                        ),
-                      ),
-                    );
-                  }),
-                ),
-                // Layer 2: Hidden TextField untuk Input
-                Opacity(
-                  opacity: 0,
-                  child: TextField(
-                    controller: otpCtrl,
-                    onChanged: (value) {
-                      setState(() {
-                        currentText = value;
-                      });
-                    },
-                    keyboardType: TextInputType.number,
-                    maxLength: 6,
-                    decoration: const InputDecoration(counterText: ""),
-                  ),
-                ),
-              ],
+            // Input OTP Kotak-kotak Merah
+            TextField(
+              controller: otpCtrl,
+              textAlign: TextAlign.center,
+              keyboardType: TextInputType.number,
+              maxLength: 6,
+              style: const TextStyle(fontSize: 32, letterSpacing: 20, fontWeight: FontWeight.bold, color: Color(0xFF990000)),
+              decoration: const InputDecoration(
+                hintText: "000000",
+                counterText: "",
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF990000), width: 2)),
+              ),
             ),
             
             const SizedBox(height: 60),
@@ -138,17 +102,10 @@ class _OtpPageState extends State<OtpPage> {
                 backgroundColor: spektaRed,
                 minimumSize: const Size(double.infinity, 55),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                elevation: 5,
               ),
               onPressed: handleVerify,
-              child: const Text("VERIFIKASI SEKARANG", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text("VERIFIKASI & AKTIFKAN", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
-            
-            const SizedBox(height: 20),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Bukan email saya? Kembali", style: TextStyle(color: Colors.grey)),
-            )
           ],
         ),
       ),

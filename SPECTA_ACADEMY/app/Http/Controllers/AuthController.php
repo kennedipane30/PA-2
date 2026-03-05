@@ -2,100 +2,125 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{User, Student, OtpCode, Enrollment};
+// Import semua Model yang dibutuhkan sesuai ERD
+use App\Models\{User, Student, OtpCode, Enrollment, Material, Schedule, Tryout, Question, TryoutResult};
 use Illuminate\Http\{Request, JsonResponse};
 use Illuminate\Support\Facades\{Hash, Validator, DB, Auth};
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class AuthController extends Controller {
 
+    // 1. REGISTRASI SISWA
     public function registerSiswa(Request $request): JsonResponse {
         $v = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
+            'name' => 'required|regex:/^[a-zA-Z\s]+$/|unique:users',
             'email' => 'required|email|unique:users',
-            'password' => ['required', 'confirmed', 'min:8', 'regex:/[A-Z]/', 'regex:/[0-9]/', 'regex:/[@$!%*#?&]/'],
-            'tanggal_lahir' => 'required|date',
-            'alamat' => 'required|string',
-            'nomor_wa' => 'required|string',
-            'nomor_wa_ortu' => 'required|string',
+            'nomor_wa' => 'required',
+            'password' => ['required', 'confirmed', 'min:8', 'regex:/[a-z]/', 'regex:/[A-Z]/', 'regex:/[0-9]/', 'regex:/[@$!%*#?&]/'],
         ]);
-
         if ($v->fails()) return response()->json(['status' => 'error', 'message' => $v->errors()->first()], 422);
-
         DB::beginTransaction();
         try {
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'phone' => $request->nomor_wa,
-                'password' => bcrypt($request->password), // Bcrypt Manual
-                'role_id' => 3, // Role Siswa
-            ]);
-
-            Student::create([
-                'user_id' => $user->usersID,
-                'school' => $request->alamat,
-                'grade' => '12 IPA',
-                'dob' => $request->tanggal_lahir,
-                'wa_ortu' => $request->nomor_wa_ortu,
-            ]);
-
+            $user = User::create(['name' => trim($request->name), 'email' => $request->email, 'phone' => $request->nomor_wa, 'password' => bcrypt($request->password), 'role_id' => 3, 'is_verified' => false]);
+            Student::create(['user_id' => $user->usersID, 'school' => '-', 'grade' => '12 IPA', 'dob' => null, 'wa_ortu' => '-', 'parent_name' => '-']);
+            $otp = rand(100000, 999999);
+            OtpCode::updateOrCreate(['user_id' => $user->usersID], ['otp' => $otp, 'valid_until' => Carbon::now()->addMinutes(10)]);
             DB::commit();
-            return response()->json(['status' => 'success'], 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-        }
+            return response()->json(['status' => 'success', 'otp' => $otp, 'name' => $user->name], 201);
+        } catch (\Exception $e) { DB::rollBack(); return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500); }
     }
 
-    public function login(Request $request): JsonResponse {
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json(['status' => 'error', 'message' => 'Gmail atau Password Salah!'], 401);
-        }
-
-        // Proteksi: Hanya Siswa (Role 3) yang boleh login di Mobile
-        if ($user->role_id != 3) {
-            return response()->json(['status' => 'error', 'message' => 'Hanya akun Siswa yang bisa login di sini!'], 403);
-        }
-
-        $otp = rand(100000, 999999);
-        OtpCode::updateOrCreate(
-            ['user_id' => $user->usersID],
-            ['otp' => $otp, 'valid_until' => Carbon::now()->addMinutes(5)]
-        );
-
-        return response()->json(['status' => 'success', 'otp' => $otp, 'email' => $user->email]);
-    }
-
-    public function verifyOtp(Request $request): JsonResponse {
-        $user = User::where('email', $request->email)->first();
+    // 2. VERIFIKASI OTP REGISTRASI
+    public function verifyRegistration(Request $request): JsonResponse {
+        $user = User::where('name', trim($request->name))->first();
         if (!$user) return response()->json(['status' => 'error', 'message' => 'User tidak ditemukan'], 404);
-
-        $otpRecord = OtpCode::where('user_id', $user->usersID)
-                            ->where('otp', $request->otp)
-                            ->where('valid_until', '>', now())
-                            ->first();
-
+        $otpRecord = OtpCode::where('user_id', $user->usersID)->where('otp', $request->otp)->where('valid_until', '>', now())->first();
         if (!$otpRecord) return response()->json(['status' => 'error', 'message' => 'Kode OTP Salah/Kadaluarsa'], 401);
-
+        $user->is_verified = true; $user->save();
         $otpRecord->delete();
-
-        return response()->json([
-            'status' => 'success',
-            'token' => $user->createToken('token')->plainTextToken,
-            'user' => $user->load('student')
-        ]);
+        return response()->json(['status' => 'success', 'message' => 'Akun Aktif!']);
     }
 
-    public function checkClassStatus(Request $request): JsonResponse {
-        $enroll = Enrollment::where('user_id', Auth::id())->where('class_id', $request->class_id)->first();
-        return response()->json(['status' => $enroll ? $enroll->status : 'none']);
+    // 3. LOGIN SISWA
+    public function login(Request $request): JsonResponse {
+        $user = User::where('name', trim($request->name))->first();
+        if (!$user || !Hash::check($request->password, $user->password)) return response()->json(['status' => 'error', 'message' => 'Nama/Password Salah'], 401);
+        if (!$user->is_verified) return response()->json(['status' => 'error', 'message' => 'Akun belum verifikasi WA!'], 403);
+        return response()->json(['status' => 'success', 'token' => $user->createToken('token')->plainTextToken, 'user' => $user->load('student')]);
     }
 
+    // 4. LENGKAPI PROFIL
+    public function updateProfile(Request $request): JsonResponse {
+        $v = Validator::make($request->all(), ['parent_name' => 'required|string', 'alamat' => 'required|string', 'wa_ortu' => 'required', 'nisn' => 'required', 'dob' => 'required|date']);
+        if ($v->fails()) return response()->json(['status' => 'error', 'message' => $v->errors()->first()], 422);
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $user->student->update(['parent_name' => $request->parent_name, 'school' => $request->alamat, 'wa_ortu' => $request->wa_ortu, 'nisn' => $request->nisn, 'dob' => $request->dob]);
+        return response()->json(['status' => 'success', 'message' => 'Profil berhasil dilengkapi']);
+    }
+
+    // 5. DAFTAR KELAS
     public function joinClass(Request $request): JsonResponse {
-        Enrollment::create(['user_id' => Auth::id(), 'class_id' => $request->class_id, 'status' => 'pending']);
-        return response()->json(['status' => 'success', 'message' => 'Menunggu verifikasi admin']);
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $path = $request->file('payment_proof')->store('proofs', 'public');
+        Enrollment::create(['user_id' => $user->usersID, 'class_id' => $request->class_id, 'payment_proof' => $path, 'status' => 'pending']);
+        return response()->json(['status' => 'success', 'message' => 'Pendaftaran terkirim!']);
     }
-}
+
+    // 6. AMBIL KONTEN MATERI & TRYOUT
+    public function getClassContent(Request $request): JsonResponse {
+        try {
+            $classId = $request->class_id;
+            $materi = Material::where('class_id', $classId)->get();
+            $tryouts = Tryout::where('class_id', $classId)->get();
+            $enroll = Enrollment::where('user_id', Auth::id())->where('class_id', $classId)->first();
+            return response()->json(['status' => 'success', 'enroll_status' => $enroll ? $enroll->status : 'none', 'price' => '900.000', 'duration' => '30 Hari', 'materi' => $materi, 'tryouts' => $tryouts], 200);
+        } catch (\Exception $e) { return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500); }
+    }
+
+    // 7. JADWAL
+    public function getSiswaSchedule(Request $request): JsonResponse {
+        $user = Auth::user();
+        $activeClassIds = Enrollment::where('user_id', $user->usersID)->where('status', 'aktif')->pluck('class_id');
+        $schedules = Schedule::whereIn('class_id', $activeClassIds)->with(['teacher', 'classModel'])->get();
+        return response()->json(['status' => 'success', 'data' => $schedules]);
+    }
+
+    // 8. AMBIL DAFTAR SOAL
+    public function getQuestions(Request $request): JsonResponse {
+        $questions = Question::where('tryout_id', $request->tryout_id)->get();
+        if ($questions->isEmpty()) return response()->json(['status' => 'error', 'message' => 'Soal belum tersedia'], 404);
+        return response()->json(['status' => 'success', 'data' => $questions], 200);
+    }
+
+    // 9. SUBMIT TRYOUT & HITUNG NILAI (LOGIKA TETAP DI DALAM CLASS)
+    public function submitTryout(Request $request): JsonResponse {
+        try {
+            $userAnswers = $request->input('answers');
+            $correctCount = 0;
+            $questions = Question::where('tryout_id', $request->tryout_id)->get();
+            foreach ($questions as $q) {
+                if (isset($userAnswers[$q->questionsID]) && $userAnswers[$q->questionsID] == $q->correct_answer) { $correctCount++; }
+            }
+            $score = count($questions) > 0 ? ($correctCount / count($questions)) * 100 : 0;
+            $result = TryoutResult::create(['user_id' => Auth::id(), 'tryout_id' => $request->tryout_id, 'score' => (int)$score, 'total_correct' => $correctCount]);
+            return response()->json(['status' => 'success', 'score' => $score, 'resultID' => $result->resultsID, 'correct' => $correctCount], 200);
+        } catch (\Exception $e) { return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500); }
+    }
+
+    // 10. DOWNLOAD PEMBAHASAN PDF
+    public function downloadPembahasan($result_id) {
+        $result = TryoutResult::with(['tryout.questions'])->findOrFail($result_id);
+        $pdf = Pdf::loadView('pdf.pembahasan', compact('result'));
+        return $pdf->download('Pembahasan_Spekta_Academy.pdf');
+    }
+
+    // 11. LOGOUT
+    public function logout(Request $request): JsonResponse {
+        $request->user()->currentAccessToken()->delete();
+        return response()->json(['status' => 'success', 'message' => 'Berhasil Logout']);
+    }
+
+} // <--- KURUNG TUTUP CLASS HARUS DI SINI

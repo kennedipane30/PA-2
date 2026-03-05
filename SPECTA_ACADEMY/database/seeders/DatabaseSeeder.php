@@ -17,16 +17,16 @@ class DatabaseSeeder extends Seeder
         $guruRole  = Role::create(['name' => 'pengajar']);
         $siswaRole = Role::create(['name' => 'siswa']);
 
-        // 2. Buat User ADMIN (HANYA SATU KALI!)
+        // 2. Buat User ADMIN
         User::create([
             'name' => 'Admin Spekta',
             'email' => 'admin@gmail.com',
             'password' => bcrypt('password123'),
-            'role_id' => $adminRole->rolesID, // Pakai rolesID sesuai PK Role
+            'role_id' => $adminRole->rolesID,
             'phone' => '08123456789'
         ]);
 
-        // 3. Buat User PENGAJAR (Agar bisa login di Web Pengajar)
+        // 3. Buat User PENGAJAR
         User::create([
             'name' => 'Pak Guru Spekta',
             'email' => 'guru@gmail.com',
@@ -46,5 +46,9 @@ class DatabaseSeeder extends Seeder
         foreach ($programs as $program) {
             ClassModel::create($program);
         }
+
+        // --- MODIFIKASI: PANGGIL SEEDER MATERI DI SINI ---
+        // Ini menjamin Kelas sudah ada sebelum Materi dibuat
+        $this->call(ClassContentSeeder::class);
     }
 }

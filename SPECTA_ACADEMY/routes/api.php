@@ -7,47 +7,43 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes - Specta Academy
+| API Routes - Specta Academy (Mobile)
 |--------------------------------------------------------------------------
 */
 
-// --- 1. ROUTE PUBLIC (Bisa diakses sebelum login) ---
-
-// Autentikasi
+// --- 1. PUBLIC ROUTES ---
 Route::post('/register', [AuthController::class, 'registerSiswa']);
+Route::post('/verify-registration', [AuthController::class, 'verifyRegistration']);
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
-
-// Galeri (Sudah terfilter 14 hari di Controller)
 Route::get('/galeri', [GaleriController::class, 'apiIndex']);
-
-// Ambil Daftar 4 Program Spekta (Untuk ditampilkan di Home Flutter)
-// Route::get('/programs', [ClassController::class, 'index']);
+Route::get('/galeri', [App\Http\Controllers\Admin\GaleriController::class, 'index']);
 
 
-// --- 2. ROUTE PROTECTED (Wajib Login / Bawa Token Sanctum) ---
 
+
+// --- 2. PROTECTED ROUTES ---
 Route::middleware('auth:sanctum')->group(function () {
 
-    // Ambil data profil lengkap siswa yang login
     Route::get('/user', function (Request $request) {
-        return $request->user()->load('role', 'profile');
+        return $request->user()->load('role', 'student');
     });
 
+    Route::post('/update-profile', [AuthController::class, 'updateProfile']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
 
-    // --- 3. ROUTE KHUSUS SISWA (Akses Fitur Akademik) ---
+    // --- 3. KHUSUS ROLE SISWA ---
     Route::middleware('role:siswa')->group(function () {
 
-        // Cek apakah siswa sudah punya akses/aktif di kelas tertentu
+        Route::post('/class/content', [AuthController::class, 'getClassContent']);
         Route::post('/class/check-status', [AuthController::class, 'checkClassStatus']);
-
-        // Siswa klik tombol "Daftar Sekarang" di Mobile
         Route::post('/class/join', [AuthController::class, 'joinClass']);
+        Route::get('/schedules', [AuthController::class, 'getSiswaSchedule']);
 
-        // Nanti di sini kita tambah route:
-        // Route::get('/materi/{class_id}', [MateriController::class, 'apiIndex']);
+        // MODIFIKASI: Tambahkan rute untuk mengambil butir soal
+        Route::post('/tryout/questions', [AuthController::class, 'getQuestions']);
+
+        Route::post('/tryout/submit', [AuthController::class, 'submitTryout']);
+        Route::get('/tryout/download/{id}', [AuthController::class, 'downloadPembahasan']);
     });
-
 });

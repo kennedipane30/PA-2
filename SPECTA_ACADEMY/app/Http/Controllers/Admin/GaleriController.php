@@ -6,77 +6,84 @@ use App\Http\Controllers\Controller;
 use App\Models\Gallery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Carbon\Carbon;
 
 class GaleriController extends Controller
 {
-    // 1. Tampil Semua (Web Admin)
-    public function index() {
-        $galeri = Gallery::latest()->get();
-        return view('admin.galeri.index', compact('galeri'));
+    // 1. Tampil Daftar Galeri
+    public function index()
+    {
+        $galleries = Gallery::latest()->get();
+        return view('admin.galeri.index', compact('galleries'));
     }
 
-    // 2. Simpan (Web Admin)
-    public function store(Request $request) {
+    // 2. Simpan Foto Baru (Create)
+    public function store(Request $request)
+    {
         $request->validate([
-            'judul' => 'required',
-            'foto' => 'required|image|mimes:jpg,png,jpeg|max:2048',
+            'judul'     => 'required|string|max:255',
+            'foto'      => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'deskripsi' => 'nullable|string',
         ]);
 
-        $path = $request->file('foto')->store('galeri', 'public');
+        if ($request->hasFile('foto')) {
+            $path = $request->file('foto')->store('galeri', 'public');
+        }
+
         Gallery::create([
-            'judul' => $request->judul,
-            'foto' => $path,
-            'deskripsi' => $request->deskripsi
+            'judul'     => $request->judul,
+            'foto'      => $path,
+            'deskripsi' => $request->deskripsi,
         ]);
 
-        return back()->with('success', 'Foto Berhasil Ditambahkan!');
+        return back()->with('success', 'Foto berhasil ditambahkan!');
     }
 
-    // 3. Edit Halaman (Web Admin)
-    public function edit($id) {
-        $item = Gallery::findOrFail($id);
-        return view('admin.galeri.edit', compact('item'));
+    // 3. Form Edit (INI YANG TADI KURANG/ERROR)
+    public function edit($id)
+    {
+        $gallery = Gallery::findOrFail($id);
+        return view('admin.galeri.edit', compact('gallery'));
     }
 
-    // 4. Update (Web Admin)
-    public function update(Request $request, $id) {
-        $item = Gallery::findOrFail($id);
-        $request->validate(['judul' => 'required']);
+    // 4. Proses Update Data
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'judul'     => 'required|string|max:255',
+            'foto'      => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'deskripsi' => 'nullable|string',
+        ]);
 
+        $gallery = Gallery::findOrFail($id);
         $data = [
-            'judul' => $request->judul,
-            'deskripsi' => $request->deskripsi
+            'judul'     => $request->judul,
+            'deskripsi' => $request->deskripsi,
         ];
 
         if ($request->hasFile('foto')) {
-            Storage::disk('public')->delete($item->foto); // Hapus foto lama
+            // Hapus foto lama jika ada foto baru yang diunggah
+            if ($gallery->foto) {
+                Storage::disk('public')->delete($gallery->foto);
+            }
             $data['foto'] = $request->file('foto')->store('galeri', 'public');
         }
 
-        $item->update($data);
-        return redirect()->route('admin.galeri.index')->with('success', 'Galeri Diperbarui!');
+        $gallery->update($data);
+
+        return redirect()->route('admin.galeri.index')->with('success', 'Galeri berhasil diperbarui!');
     }
 
-    // 5. Hapus (Web Admin)
-    public function destroy($id) {
-        $item = Gallery::findOrFail($id);
-        Storage::disk('public')->delete($item->foto);
-        $item->delete();
-        return back()->with('success', 'Foto Berhasil Dihapus!');
-    }
+    // 5. Hapus Foto
+    public function destroy($id)
+    {
+        $gallery = Gallery::findOrFail($id);
+        
+        if ($gallery->foto) {
+            Storage::disk('public')->delete($gallery->foto);
+        }
+        
+        $gallery->delete();
 
-    // 6. API UNTUK MOBILE (Siswa - Muncul 14 Hari Saja)
-    public function apiIndex() {
-        $batasWaktu = now()->subDays(14); // Syarat 14 hari
-
-        $galeri = Gallery::where('created_at', '>=', $batasWaktu)
-                        ->latest()
-                        ->get();
-
-        return response()->json([
-            'status' => 'success',
-            'data' => $galeri
-        ]);
+        return back()->with('success', 'Foto berhasil dihapus!');
     }
 }

@@ -6,10 +6,14 @@ use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\GaleriController;
 use App\Http\Controllers\Admin\PembayaranController;
 use App\Http\Controllers\Admin\ManajemenSiswaController;
-use App\Http\Controllers\Admin\PengumumanController; // 1. Pastikan ini dipanggil
+use App\Http\Controllers\Admin\PengumumanController;
+use App\Http\Controllers\Admin\JadwalController;
+use App\Http\Controllers\Admin\ManajemenPengajarController;
 use App\Http\Controllers\Pengajar\PengajarDashboardController;
 use App\Http\Controllers\Pengajar\MateriController;
 use App\Http\Controllers\Pengajar\TryoutController;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Storage;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,58 +21,76 @@ use App\Http\Controllers\Pengajar\TryoutController;
 |--------------------------------------------------------------------------
 */
 
-// --- 1. JALUR AUTHENTICATION ---
-Route::get('/', function () {
-    return redirect()->route('login');
-});
-
+Route::get('/', function () { return redirect()->route('login'); });
 Route::get('/login', [WebAuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [WebAuthController::class, 'login']);
 Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
 
 
-// --- 2. GROUP ADMINISTRASI (Role: admin, Prefix: /admin) ---
+// --- 1. GROUP ADMINISTRASI (Role: Admin) ---
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
 
-    // Dashboard
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
-    // 2. Perbaikan: Menggunakan PengumumanController (bukan AdminDashboardController)
-    // Route::get('/pengumuman', [PengumumanController::class, 'index'])->name('pengumuman.index');
-    // Route::post('/pengumuman', [PengumumanController::class, 'store'])->name('pengumuman.store');
-    // Route::delete('/pengumuman/{id}', [PengumumanController::class, 'destroy'])->name('pengumuman.destroy');
+    // Manajemen Pengumuman
+    Route::get('/pengumuman', [PengumumanController::class, 'index'])->name('pengumuman.index');
+    Route::post('/pengumuman', [PengumumanController::class, 'store'])->name('pengumuman.store');
+    Route::delete('/pengumuman/{id}', [PengumumanController::class, 'destroy'])->name('pengumuman.destroy');
 
-    // MANAJEMEN GALERI
+    // --- CRUD GALERI LENGKAP ---
     Route::get('/galeri', [GaleriController::class, 'index'])->name('galeri.index');
     Route::post('/galeri', [GaleriController::class, 'store'])->name('galeri.store');
-    Route::get('/galeri/edit/{id}', [GaleriController::class, 'edit'])->name('galeri.edit'); // Rute Edit
-    Route::put('/galeri/update/{id}', [GaleriController::class, 'update'])->name('galeri.update'); // Rute Update
-    Route::delete('/galeri/hapus/{id}', [GaleriController::class, 'destroy'])->name('galeri.destroy'); // Rute Hapus
+    Route::get('/galeri/edit/{id}', [GaleriController::class, 'edit'])->name('galeri.edit');
+    Route::put('/galeri/update/{id}', [GaleriController::class, 'update'])->name('galeri.update');
+    Route::delete('/galeri/hapus/{id}', [GaleriController::class, 'destroy'])->name('galeri.destroy');
 
-    // Manajemen Siswa & Verifikasi Pendaftaran Kelas (Fitur Inti yang tadi dibahas)
-    // Route::get('/siswa', [ManajemenSiswaController::class, 'index'])->name('siswa.index');
-    // Route::get('/pendaftaran-kelas', [ManajemenSiswaController::class, 'pendaftaranKelas'])->name('siswa.pendaftaran');
-    // Route::post('/pendaftaran-kelas/aktivasi/{id}', [ManajemenSiswaController::class, 'aktivasiSiswa'])->name('siswa.aktivasi');
+    // Manajemen Jadwal & Akun Pengajar
+    Route::resource('jadwal', JadwalController::class);
+    Route::resource('manajemen-pengajar', ManajemenPengajarController::class);
 
-    // Manajemen Keuangan
+    // Manajemen Siswa (Hierarkis)
+    Route::prefix('siswa')->name('siswa.')->group(function () {
+        Route::get('/semua', [ManajemenSiswaController::class, 'index'])->name('index');
+        Route::get('/tambah-kelas', [ManajemenSiswaController::class, 'indexPendaftaran'])->name('pendaftaran');
+        Route::get('/tambah-kelas/aktivasi/{id}', [ManajemenSiswaController::class, 'formAktivasi'])->name('form_aktivasi');
+        Route::post('/tambah-kelas/proses/{id}', [ManajemenSiswaController::class, 'prosesAktivasi'])->name('proses_aktivasi');
+    });
+
+    // Keuangan & Promo
     Route::get('/pembayaran', [PembayaranController::class, 'index'])->name('pembayaran.index');
     Route::post('/pembayaran/verifikasi/{id}', [PembayaranController::class, 'verifikasi'])->name('pembayaran.verify');
     Route::get('/promo', [PembayaranController::class, 'promo'])->name('promo');
 });
 
 
-// --- 3. GROUP PENGAJAR (Role: pengajar, Prefix: /pengajar) ---
+// --- 2. GROUP PENGAJAR (Role: Pengajar) ---
 Route::middleware(['auth', 'role:pengajar'])->prefix('pengajar')->name('pengajar.')->group(function () {
 
-    // Dashboard & Kehadiran
     Route::get('/dashboard', [PengajarDashboardController::class, 'index'])->name('dashboard');
-    Route::get('/absensi', [PengajarDashboardController::class, 'absensi'])->name('absensi');
+    Route::get('/jadwal-mengajar', [PengajarDashboardController::class, 'jadwalSaya'])->name('jadwal.index');
 
-    // Manajemen Pembelajaran
+    // Absensi Per Kelas
+    Route::get('/absensi', [PengajarDashboardController::class, 'absensi'])->name('absensi.index');
+    Route::get('/absensi/{class_id}', [PengajarDashboardController::class, 'showAbsensi'])->name('absensi.show');
+    Route::post('/absensi/simpan', [PengajarDashboardController::class, 'storeAbsensi'])->name('absensi.store');
+
+    // Materi
     Route::get('/materi', [MateriController::class, 'index'])->name('materi.index');
     Route::post('/materi/upload', [MateriController::class, 'store'])->name('materi.store');
 
-    // Evaluasi & Tryout
+    // Tryout
     Route::get('/soal-tryout', [TryoutController::class, 'buatSoal'])->name('tryout.create');
+     Route::post('/soal-tryout/import', [TryoutController::class, 'importSoal'])->name('tryout.import');
     Route::get('/nilai', [TryoutController::class, 'lihatNilai'])->name('tryout.nilai');
+});
+
+// Jalur khusus untuk melihat gambar jika tidak menggunakan symlink (php artisan storage:link)
+Route::get('/view-galeri/{filename}', function ($filename) {
+    $path = 'public/galeri/' . $filename;
+    if (!Storage::exists($path)) { abort(404); }
+    $file = Storage::get($path);
+    $type = Storage::mimeType($path);
+    $response = Response::make($file, 200);
+    $response->header("Content-Type", $type);
+    return $response;
 });
