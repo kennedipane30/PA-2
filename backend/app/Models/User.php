@@ -14,8 +14,8 @@ class User extends Authenticatable
     protected $primaryKey = 'usersID'; // Pastikan PK ini ada
     
 
-    protected $fillable = [
-        'name', 'email', 'phone', 'role_id', 'password',
+      protected $fillable = [
+        'name', 'email', 'phone', 'password', 'role_id', 'is_verified'
     ];
 
     // --- TAMBAHKAN RELASI INI (PENTING!) ---
