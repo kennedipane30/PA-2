@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+// 1. PASTIKAN ANDA MENGIMPORT HALAMAN NOTIFIKASI
+import 'notifikasi_page.dart'; 
 
 class HomePage extends StatefulWidget {
   final String userName;
@@ -35,12 +37,10 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> fetchGaleri() async {
     try {
-      // Mengambil data galeri dari API Laravel
       final response = await http.get(Uri.parse('http://10.0.2.2:8000/api/galeri'));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
-          // Mengambil array dari 'data' sesuai format JSON kita
           galeriData = data['data'] ?? [];
         });
         if (galeriData.isNotEmpty) {
@@ -80,7 +80,7 @@ class _HomePageState extends State<HomePage> {
             // --- HEADER MERAH ---
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.only(top: 60, left: 25, right: 25, bottom: 35),
+              padding: const EdgeInsets.only(top: 60, left: 25, right: 15, bottom: 35),
               decoration: BoxDecoration(
                 color: spektaRed,
                 borderRadius: const BorderRadius.only(
@@ -91,13 +91,29 @@ class _HomePageState extends State<HomePage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text("Hai, ${widget.userName}", 
-                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                  const Row(
+                  Expanded(
+                    child: Text("Hai, ${widget.userName}", 
+                      style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                  ),
+                  // 2. MODIFIKASI BAGIAN INI: Menggunakan IconButton agar bisa diklik
+                  Row(
                     children: [
-                      Icon(Icons.notifications_none, color: Colors.white),
-                      SizedBox(width: 15),
-                      Icon(Icons.bookmark_border, color: Colors.white),
+                      IconButton(
+                        onPressed: () {
+                          // NAVIGASI KE HALAMAN NOTIFIKASI
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const NotifikasiPage()),
+                          );
+                        },
+                        icon: const Icon(Icons.notifications_none, color: Colors.white, size: 28),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          // Tambahkan aksi untuk bookmark di sini
+                        },
+                        icon: const Icon(Icons.bookmark_border, color: Colors.white, size: 28),
+                      ),
                     ],
                   )
                 ],
@@ -109,7 +125,6 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- 1. LAYANAN SPEKTA ---
                   const Text("Layanan Spekta", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 15),
                   Row(
@@ -124,7 +139,6 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 35),
 
-                  // --- 2. BANNER PROMO ---
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
@@ -159,7 +173,6 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 35),
 
-                  // --- 3. SECTION GALERI KEGIATAN (DIPERBAIKI) ---
                   if (galeriData.isNotEmpty) ...[
                     const Center(child: Text("Kegiatan Spekta Terbaru", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
                     const SizedBox(height: 15),
@@ -171,8 +184,6 @@ class _HomePageState extends State<HomePage> {
                         onPageChanged: (index) => _currentPage = index,
                         itemBuilder: (context, index) {
                           var item = galeriData[index];
-                          
-                          // SOLUSI: Menggunakan IP 10.0.2.2 untuk emulator dan folder storage
                           String imageUrl = 'http://10.0.2.2:8000/storage/${item['foto']}';
                           
                           return Column(
@@ -194,23 +205,14 @@ class _HomePageState extends State<HomePage> {
                                       imageUrl,
                                       fit: BoxFit.cover,
                                       width: double.infinity,
-                                      // Handler saat loading
                                       loadingBuilder: (context, child, loadingProgress) {
                                         if (loadingProgress == null) return child;
                                         return const Center(child: CircularProgressIndicator(color: Color(0xFF990000)));
                                       },
-                                      // HANDLER ERROR AGAR TIDAK BLANK ABU-ABU
                                       errorBuilder: (context, error, stackTrace) {
-                                        debugPrint("Gagal muat gambar dari: $imageUrl");
                                         return Container(
                                           color: Colors.grey[200],
-                                          child: const Center(child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Icon(Icons.broken_image, size: 40, color: Colors.grey),
-                                              Text("Gambar gagal dimuat", style: TextStyle(fontSize: 10, color: Colors.grey)),
-                                            ],
-                                          )),
+                                          child: const Center(child: Icon(Icons.broken_image, size: 40, color: Colors.grey)),
                                         );
                                       },
                                     ),

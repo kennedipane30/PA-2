@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
-
+  
 class EditProfilePage extends StatefulWidget {
-  final Map userData; 
+  final Map userData;
   final String token;
   const EditProfilePage({super.key, required this.userData, required this.token});
 
-  @override State<EditProfilePage> createState() => _EditProfilePageState();
+  @override
+  State<EditProfilePage> createState() => _EditProfilePageState();
 }
 
 class _EditProfilePageState extends State<EditProfilePage> {
@@ -17,28 +18,38 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _waOrtuCtrl = TextEditingController();
   final _nisnCtrl = TextEditingController();
   final _dobCtrl = TextEditingController();
+  
   final Color spektaRed = const Color(0xFF990000);
+  final Color spektaBg = const Color(0xFFF8F9FA);
 
-  @override void initState() {
+  @override
+  void initState() {
     super.initState();
-    // Isi otomatis jika data sudah ada
     if (widget.userData['student'] != null) {
       var s = widget.userData['student'];
-      _parentCtrl.text = s['parent_name'] ?? "";
-      _alamatCtrl.text = s['school'] ?? "";
-      _waOrtuCtrl.text = s['wa_ortu'] ?? "";
-      _nisnCtrl.text = s['nisn'] ?? "";
-      _dobCtrl.text = s['dob'] ?? "";
+      // Jika data adalah "-", kita kosongkan agar TextField menampilkan hint
+      _parentCtrl.text = s['parent_name'] == "-" ? "" : (s['parent_name'] ?? "");
+      _alamatCtrl.text = s['school'] == "-" ? "" : (s['school'] ?? "");
+      _waOrtuCtrl.text = s['wa_ortu'] == "-" ? "" : (s['wa_ortu'] ?? "");
+      _nisnCtrl.text = s['nisn'] == "-" ? "" : (s['nisn'] ?? "");
+      _dobCtrl.text = s['dob'] == "-" ? "" : (s['dob'] ?? "");
     }
   }
 
-  // Fungsi Pilih Tanggal (DatePicker)
   Future<void> _selectDate() async {
     DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime(2005),
+      initialDate: DateTime(2007),
       firstDate: DateTime(1990),
       lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(primary: spektaRed),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) {
       setState(() => _dobCtrl.text = DateFormat('yyyy-MM-dd').format(picked));
@@ -47,11 +58,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   void _handleSave() async {
     if (_parentCtrl.text.isEmpty || _alamatCtrl.text.isEmpty || _nisnCtrl.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Isi semua data!")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Mohon lengkapi semua kolom yang tersedia")),
+      );
       return;
     }
 
-    showDialog(context: context, builder: (_) => const Center(child: CircularProgressIndicator(color: Color(0xFF990000))));
+    showDialog(
+      context: context, 
+      barrierDismissible: false,
+      builder: (_) => Center(child: CircularProgressIndicator(color: spektaRed))
+    );
 
     var resp = await AuthService.updateProfile({
       'parent_name': _parentCtrl.text,
@@ -62,65 +79,159 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }, widget.token);
 
     if (!mounted) return;
-    Navigator.pop(context); // Tutup Loading
+    Navigator.pop(context);
 
     if (resp.statusCode == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text("Data diri anda berhasil dilengkapi")));
-      Navigator.pop(context, true); // Balik ke halaman Akun
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(backgroundColor: Colors.green, content: Text("Profil berhasil diperbarui!")),
+      );
+      Navigator.pop(context, true);
     } else {
       final err = jsonDecode(resp.body);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text(err['message'])));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(backgroundColor: Colors.red, content: Text(err['message'] ?? "Terjadi kesalahan")),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Lengkapi Data Diri"), backgroundColor: spektaRed, foregroundColor: Colors.white),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text("Lengkapi Profil", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+        centerTitle: true,
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(25),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // INFO AKUN (READ ONLY)
+            const Text(
+              "Tinggal selangkah lagi!",
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Lengkapi data di bawah untuk mendaftar kelas.",
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            
+            // CARD INFO AKUN (MODERN LOOK)
             Container(
-              padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(15)),
-              child: Column(children: [
-                ListTile(leading: const Icon(Icons.email_outlined), title: const Text("Gmail"), subtitle: Text(widget.userData['email'] ?? "-")),
-                const Divider(),
-                ListTile(leading: const Icon(Icons.phone_android), title: const Text("Nomor WhatsApp"), subtitle: Text(widget.userData['phone'] ?? "-")),
-              ]),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: spektaBg,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                children: [
+                  _buildInfoRow(Icons.email_outlined, "Gmail", widget.userData['email']),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Divider(height: 1),
+                  ),
+                  _buildInfoRow(Icons.phone_android, "WhatsApp", widget.userData['phone']),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+            
+            // FORM INPUT
+            _buildModernInput(_nisnCtrl, "NISN Siswa", Icons.numbers_rounded, TextInputType.number),
+            _buildModernInput(_parentCtrl, "Nama Orang Tua", Icons.person_outline_rounded, TextInputType.name),
+            _buildModernInput(_alamatCtrl, "Alamat Lengkap / Asal Sekolah", Icons.location_on_outlined, TextInputType.streetAddress),
+            _buildModernInput(_waOrtuCtrl, "WhatsApp Orang Tua", Icons.phone_iphone_rounded, TextInputType.phone),
+            
+            // TANGGAL LAHIR
+            const Text("Tanggal Lahir", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _dobCtrl,
+              readOnly: true,
+              onTap: _selectDate,
+              decoration: InputDecoration(
+                hintText: "Pilih Tanggal",
+                prefixIcon: Icon(Icons.calendar_today_rounded, color: spektaRed, size: 20),
+                filled: true,
+                fillColor: spektaBg,
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              ),
+            ),
+            
+            const SizedBox(height: 40),
+            
+            // TOMBOL SIMPAN
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: spektaRed,
+                minimumSize: const Size(double.infinity, 56),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 4,
+                shadowColor: spektaRed.withOpacity(0.4),
+              ),
+              onPressed: _handleSave,
+              child: const Text("SIMPAN PERUBAHAN", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
             ),
             const SizedBox(height: 30),
-            
-            // INPUT MANUAL
-            _buildInput(_nisnCtrl, "NISN Siswa", Icons.numbers),
-            _buildInput(_parentCtrl, "Nama Orang Tua", Icons.person_outline),
-            _buildInput(_alamatCtrl, "Alamat Lengkap", Icons.location_on_outlined),
-            _buildInput(_waOrtuCtrl, "WhatsApp Orang Tua", Icons.phone),
-            
-            // Tanggal Lahir (DatePicker)
-            TextField(
-              controller: _dobCtrl, readOnly: true, onTap: _selectDate,
-              decoration: const InputDecoration(labelText: "Tanggal Lahir", prefixIcon: Icon(Icons.calendar_month, color: Color(0xFF990000))),
-            ),
-            
-            const SizedBox(height: 50),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: spektaRed, minimumSize: const Size(double.infinity, 55), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-              onPressed: _handleSave,
-              child: const Text("SIMPAN DATA", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            )
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInput(TextEditingController ctrl, String label, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
-      child: TextField(controller: ctrl, decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon, color: spektaRed))),
+  Widget _buildInfoRow(IconData icon, String label, String? value) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Colors.grey[600]),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+            Text(value ?? "-", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModernInput(TextEditingController ctrl, String label, IconData icon, TextInputType type) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 20),
+          child: TextField(
+            controller: ctrl,
+            keyboardType: type,
+            decoration: InputDecoration(
+              hintText: "Masukkan $label",
+              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+              prefixIcon: Icon(icon, color: spektaRed, size: 20),
+              filled: true,
+              fillColor: spektaBg,
+              contentPadding: const EdgeInsets.symmetric(vertical: 16),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: spektaRed, width: 1.5),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

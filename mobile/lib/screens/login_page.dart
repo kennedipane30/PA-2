@@ -179,7 +179,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 onPressed: _isLoading ? null : handleLogin,
                 child: const Text(
-                  "MASUK KE DASHBOARD",
+                  "LOGIN",
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ),
