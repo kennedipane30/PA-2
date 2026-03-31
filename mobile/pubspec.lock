@@ -288,6 +288,7 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.17.0"
+<<<<<<< Updated upstream:mobile/pubspec.lock
   mime:
     dependency: transitive
     description:
@@ -296,6 +297,8 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+=======
+>>>>>>> Stashed changes:spectaacademy/pubspec.lock
   path:
     dependency: transitive
     description:

@@ -3,17 +3,18 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Role; // Memanggil model Role yang benar
+use Illuminate\Support\Facades\DB;
 
 class RoleSeeder extends Seeder
 {
     public function run(): void
     {
-        // Menghapus data lama agar tidak duplikat saat dijalankan ulang
-        Role::truncate();
+        $roles = [
+            ['nama_role' => 'admin', 'created_at' => now(), 'updated_at' => now()],
+            ['nama_role' => 'teacher', 'created_at' => now(), 'updated_at' => now()],
+            ['nama_role' => 'student', 'created_at' => now(), 'updated_at' => now()],
+        ];
 
-        Role::create(['nama_role' => 'admin']);
-        Role::create(['nama_role' => 'pengajar']);
-        Role::create(['nama_role' => 'siswa']);
+        DB::table('roles')->insert($roles);
     }
 }

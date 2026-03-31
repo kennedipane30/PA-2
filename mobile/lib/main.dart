@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:spectaacademy/screens/login_page.dart';
-import 'screens/main_screen.dart';
 
 void main() => runApp(const SpektaApp());
 
