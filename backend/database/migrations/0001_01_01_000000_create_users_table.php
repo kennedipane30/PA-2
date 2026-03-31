@@ -6,51 +6,33 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
-        // 1. BUAT TABEL ROLES DULU
-        Schema::create('roles', function (Blueprint $table) {
-            $table->id('rolesID'); // Sesuai ERD
-            $table->string('name');
+        // HANYA ADA TABEL USERS DI SINI
+        Schema::create('users', function (Blueprint $table) {
+            $table->id('user_id');
+
+            // Relasi ke Roles
+            $table->foreignId('role_id')->constrained('roles', 'role_id');
+
+            $table->string('name', 50);
+            $table->string('email', 50)->unique();
+            $table->string('password', 255);
+            $table->string('phone', 50);
+            $table->string('otp_code', 50)->nullable();
+            $table->smallInteger('is_verified')->default(0);
             $table->timestamps();
-        });
-
-        // 2. BUAT TABEL USERS
-// database/migrations/xxxx_create_users_table.php
-    Schema::create('users', function (Blueprint $table) {
-        $table->id('usersID');
-        $table->string('name')->unique(); // Nama unik untuk login
-        $table->string('email')->unique();
-        $table->string('phone');
-        $table->string('password');
-        $table->boolean('is_verified')->default(false); // Status Verifikasi
-        $table->foreignId('role_id')->constrained('roles', 'rolesID');
-        $table->timestamps();
-    });
-
-        // 3. TABEL PASSWORD RESET
-        Schema::create('password_reset_tokens', function (Blueprint $table) {
-            $table->string('email')->primary();
-            $table->string('token');
-            $table->timestamp('created_at')->nullable();
-        });
-
-        // 4. TABEL SESSIONS (PENTING AGAR TIDAK ERROR 500 LAGI)
-        Schema::create('sessions', function (Blueprint $table) {
-            $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
-            $table->string('ip_address', 45)->nullable();
-            $table->text('user_agent')->nullable();
-            $table->longText('payload');
-            $table->integer('last_activity')->index();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
-        Schema::dropIfExists('sessions');
-        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('users');
-        Schema::dropIfExists('roles');
     }
 };

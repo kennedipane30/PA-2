@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class ClassModel extends Model
+class CourseClass extends Model
 {
     protected $table = 'classes';
     protected $primaryKey = 'class_id';
@@ -15,7 +15,7 @@ class ClassModel extends Model
         'description',
         'price',
         'start_date',
-        'end_date',
+        'end_date'
     ];
 
     public function category()
@@ -26,10 +26,5 @@ class ClassModel extends Model
     public function teacher()
     {
         return $this->belongsTo(Teacher::class, 'teachers_id', 'teacher_id');
-    }
-
-    public function schedules()
-    {
-        return $this->hasMany(Schedule::class, 'class_id', 'class_id');
     }
 }

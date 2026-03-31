@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('attendances', function (Blueprint $table) {
-            $table->id('attendance_id');
-            $table->foreignId('schedule_id')->constrained('schedules', 'schedule_id')->onDelete('cascade');
+        Schema::create('class_enrollments', function (Blueprint $table) {
+            $table->id('enrollment_id');
             $table->foreignId('user_id')->constrained('users', 'user_id')->onDelete('cascade');
-            $table->enum('status', ['hadir', 'izin', 'sakit', 'alfa']);
-            $table->date('date');
+            $table->foreignId('class_id')->constrained('classes', 'class_id')->onDelete('cascade');
+            $table->text('payment_proof')->nullable();
+            $table->enum('status', ['pending', 'aktif', 'cancelled'])->default('pending');
+            $table->timestamp('expires_at')->nullable();
             $table->timestamps();
         });
     }
@@ -26,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('attendances');
+        Schema::dropIfExists('class_enrollments');
     }
 };

@@ -6,7 +6,7 @@
 
     <form action="{{ route('pengajar.absensi.store') }}" method="POST">
         @csrf
-        <input type="hidden" name="schedule_id" value="{{ $isAssigned->schedulesID }}">
+        <input type="hidden" name="schedule_id" value="{{ $isAssigned->schedule_id }}">
 
         <table class="w-full text-left">
             <thead>
@@ -21,13 +21,13 @@
                     <td class="p-4"><b>{{ $s->user->name }}</b></td>
                     <td class="p-4 flex justify-center gap-4">
                         <label class="flex items-center gap-1 text-xs">
-                            <input type="radio" name="status[{{ $s->user->usersID }}]" value="hadir" checked> Hadir
+                            <input type="radio" name="status[{{ $s->user->user_id }}]" value="hadir" checked> Hadir
                         </label>
                         <label class="flex items-center gap-1 text-xs">
-                            <input type="radio" name="status[{{ $s->user->usersID }}]" value="izin"> Izin
+                            <input type="radio" name="status[{{ $s->user->user_id }}]" value="izin"> Izin
                         </label>
                         <label class="flex items-center gap-1 text-xs">
-                            <input type="radio" name="status[{{ $s->user->usersID }}]" value="alpa"> Alpa
+                            <input type="radio" name="status[{{ $s->user->user_id }}]" value="alpa"> Alpa
                         </label>
                     </td>
                 </tr>

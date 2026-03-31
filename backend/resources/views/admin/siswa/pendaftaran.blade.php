@@ -20,7 +20,7 @@
                 <td class="p-4 border-b text-red-700 font-bold uppercase">{{ $row->classModel->nama_program }}</td>
                 <td class="p-4 border-b">
                     <!-- Tombol untuk melihat Detail A atau B -->
-                    <a href="{{ route('admin.siswa.form_aktivasi', $row->enrollmentsID) }}"
+                    <a href="{{ route('admin.siswa.form_aktivasi', $row->enrollment_id) }}"
                        class="bg-[#990000] text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md hover:bg-red-800 transition">
                        TAMBAHKAN SISWA
                     </a>

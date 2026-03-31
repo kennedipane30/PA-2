@@ -53,7 +53,7 @@
                         </button>
                         <div id="pengajar-menu" class="hidden bg-red-950/30">
                             @foreach(\App\Models\ClassModel::all() as $c)
-                                <a href="{{ route('pengajar.absensi.show', $c->class_modelsID) }}" class="block py-2 pl-12 pr-6 text-[11px] hover:text-yellow-400">○ {{ $c->nama_program }}</a>
+                                <a href="{{ route('pengajar.absensi.show', $c->class_id) }}" class="block py-2 pl-12 pr-6 text-[11px] hover:text-yellow-400">○ {{ $c->nama_program }}</a>
                             @endforeach
                         </div>
                     </div>
@@ -68,7 +68,7 @@
                         </button>
                         <div id="tryout-menu" class="hidden bg-red-950/30">
                             @foreach(\App\Models\ClassModel::all() as $c)
-                                <a href="{{ route('pengajar.tryout.create', ['class_id' => $c->class_modelsID]) }}" class="block py-2 pl-12 pr-6 text-[11px] hover:text-yellow-400">○ {{ $c->nama_program }}</a>
+                                <a href="{{ route('pengajar.tryout.create', ['class_id' => $c->class_id]) }}" class="block py-2 pl-12 pr-6 text-[11px] hover:text-yellow-400">○ {{ $c->nama_program }}</a>
                             @endforeach
                         </div>
                     </div>

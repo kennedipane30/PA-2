@@ -9,10 +9,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('otp_codes', function (Blueprint $table) {
-            $table->id(); // ID untuk tabel OTP sendiri
+            $table->id(); 
             
-            // Perbaikan di sini: menghubungkan user_id ke usersID di tabel users
-            $table->foreignId('user_id')->constrained('users', 'usersID')->onDelete('cascade');
+            // PERBAIKAN: Harus 'user_id' (huruf kecil semua, pakai underscore) 
+            // agar cocok dengan Primary Key yang baru di tabel users
+            $table->foreignId('user_id')->constrained('users', 'user_id')->onDelete('cascade');
             
             $table->string('email')->index();
             $table->string('otp_code');

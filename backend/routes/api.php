@@ -62,8 +62,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // Mendapatkan semua daftar user untuk ditampilkan di Dashboard Admin
         Route::get('/admin/users', [AuthController::class, 'getAllUsers']);
         
-        // Menghapus user berdasarkan ID (usersID sesuai primary key Anda)
-        Route::delete('/admin/users/{usersID}', [AuthController::class, 'deleteUser']);
+        // Menghapus user berdasarkan ID (user_id sesuai primary key)
+        Route::delete('/admin/users/{user_id}', [AuthController::class, 'deleteUser']);
     });
 
 });

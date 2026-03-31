@@ -11,14 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tryouts', function (Blueprint $table) {
-            $table->id('tryoutsID'); // PK Sesuai ERD
-            // Pastikan merujuk ke class_modelsID pada tabel class_models
-            $table->foreignId('class_id')->constrained('class_models', 'class_modelsID')->onDelete('cascade');
-            $table->string('title');
-            $table->integer('duration');
-            $table->timestamps();
-        });
+       // File: xxxx_create_tryouts_table.php
+Schema::create('tryouts', function (Blueprint $table) {
+    // Gunakan tryout_id (singular) agar konsisten dengan tabel results tadi
+    $table->id('tryout_id'); 
+    $table->string('title');
+    $table->integer('duration');
+    $table->timestamps();
+});
     }
 
     public function down(): void

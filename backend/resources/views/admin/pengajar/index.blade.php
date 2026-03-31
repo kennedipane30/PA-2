@@ -32,7 +32,7 @@
                 <td class="p-4">{{ $t->email }}</td>
                 <td class="p-4">{{ $t->phone }}</td>
                 <td class="p-4">
-                    <form action="{{ route('admin.manajemen-pengajar.destroy', $t->usersID) }}" method="POST">
+                    <form action="{{ route('admin.manajemen-pengajar.destroy', $t->user_id) }}" method="POST">
                         @csrf @method('DELETE')
                         <button class="text-red-600 font-bold uppercase text-xs" onclick="return confirm('Hapus akun ini?')">Hapus</button>
                     </form>

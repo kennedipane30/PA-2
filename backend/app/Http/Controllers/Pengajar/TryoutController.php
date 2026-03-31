@@ -55,7 +55,7 @@ class TryoutController extends Controller
             }
 
             Question::create([
-                'tryout_id'      => $tryout->tryoutsID,
+                'tryout_id'      => $tryout->tryout_id,
                 'question'       => $row[1],
                 'option_a'       => $row[2] ?? '-',
                 'option_b'       => $row[3] ?? '-',

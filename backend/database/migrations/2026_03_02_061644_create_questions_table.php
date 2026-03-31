@@ -12,15 +12,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('questions', function (Blueprint $table) {
-            $table->id('questionsID'); // PK Sesuai ERD
-            // Menghubungkan ke tryoutsID pada tabel tryouts
-            $table->foreignId('tryout_id')->constrained('tryouts', 'tryoutsID')->onDelete('cascade');
+            // Primary Key untuk tabel soal ini
+            $table->id('question_id');
+
+            // Hubungkan ke 'tryout_id' di tabel 'tryouts'
+            $table->foreignId('tryout_id')->constrained('tryouts', 'tryout_id')->onDelete('cascade');
+            
             $table->text('question');
             $table->string('option_a');
             $table->string('option_b');
             $table->string('option_c');
             $table->string('option_d');
-            $table->char('correct_answer', 1);
+            $table->char('correct_answer', 1); // Simpan A, B, C, atau D
             $table->text('explanation')->nullable();
             $table->timestamps();
         });

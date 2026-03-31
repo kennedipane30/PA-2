@@ -2,53 +2,80 @@
 
 namespace Database\Seeders;
 
+use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Role;
-use App\Models\ClassModel;
-use Illuminate\Database\Seeder;
+use App\Models\Teacher;
+use App\Models\Category;
+use App\Models\CourseClass; // <--- GUNAKAN INI
 use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Buat Role Sesuai ERD
+        // 1. Buat Role (Sesuai Migration 0000)
         $adminRole = Role::create(['name' => 'admin']);
         $guruRole  = Role::create(['name' => 'pengajar']);
         $siswaRole = Role::create(['name' => 'siswa']);
 
-        // 2. Buat User ADMIN
+        // 2. Buat User Admin
         User::create([
             'name' => 'Admin Spekta',
             'email' => 'admin@gmail.com',
-            'password' => bcrypt('password123'),
-            'role_id' => $adminRole->rolesID,
-            'phone' => '08123456789'
+            'password' => Hash::make('password123'),
+            'role_id' => $adminRole->role_id,
+            'phone' => '08123456789',
+            'is_verified' => 1,
         ]);
 
-        // 3. Buat User PENGAJAR
-        User::create([
+        // 3. Buat User Pengajar & Data Teacher
+        $userGuru = User::create([
             'name' => 'Pak Guru Spekta',
             'email' => 'guru@gmail.com',
-            'password' => bcrypt('password123'),
-            'role_id' => $guruRole->rolesID,
-            'phone' => '08123456788'
+            'password' => Hash::make('password123'),
+            'role_id' => $guruRole->role_id,
+            'phone' => '08123456788',
+            'is_verified' => 1,
         ]);
 
-        // 4. Isi data 4 Program Utama Spekta
+        $teacherData = Teacher::create([
+            'user_id' => $userGuru->user_id,
+            'specialization' => 'TPA & Kesamaptaan'
+        ]);
+
+        // 4. Buat Kategori
+        $kategori = Category::create([
+            'name' => 'Program Utama',
+            'slug' => 'program-utama'
+        ]);
+
+        // 5. Masukkan Data ke Tabel 'classes' menggunakan Model 'CourseClass'
         $programs = [
-            ['nama_program' => 'CALON ABDI NEGARA', 'gambar' => 'abdi_negara.png'],
-            ['nama_program' => 'PTN & UNHAN', 'gambar' => 'ptn.png'],
-            ['nama_program' => 'SMA & SMP REGULER', 'gambar' => 'reguler.png'],
-            ['nama_program' => 'SMA FAVORIT', 'gambar' => 'favorit.png'],
+            [
+                'title' => 'CALON ABDI NEGARA',
+                'description' => 'Bimbingan Belajar TNI - POLRI - SEKDIN',
+                'price' => 900000,
+                'teachers_id' => $teacherData->teacher_id,
+                'category_id' => $kategori->id,
+                'start_date' => '2026-04-01',
+                'end_date' => '2026-12-31',
+            ],
+            [
+                'title' => 'PTN & UNHAN',
+                'description' => 'Persiapan Masuk Kampus Impian',
+                'price' => 850000,
+                'teachers_id' => $teacherData->teacher_id,
+                'category_id' => $kategori->id,
+                'start_date' => '2026-04-01',
+                'end_date' => '2026-12-31',
+            ]
         ];
 
         foreach ($programs as $program) {
-            ClassModel::create($program);
+            CourseClass::create($program);
         }
 
-        // --- MODIFIKASI: PANGGIL SEEDER MATERI DI SINI ---
-        // Ini menjamin Kelas sudah ada sebelum Materi dibuat
-        $this->call(ClassContentSeeder::class);
+        echo "Seeding Berhasil! Tabel 'classes' sudah terisi sesuai CDM.\n";
     }
 }

@@ -6,21 +6,35 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('materials', function (Blueprint $table) {
-            $table->id('materialsID'); // Primary Key sesuai ERD kamu
+            // Primary Key sesuai CDM (Gunakan material_id agar konsisten)
+            $table->id('material_id'); 
 
-            // Relasi ke tabel class_models (Induknya)
-            // Pastikan on('class_models') dan references('class_modelsID') sesuai database kamu
-            $table->foreignId('class_id')->constrained('class_models', 'class_modelsID')->onDelete('cascade');
+            // PERBAIKAN 1: Hubungkan ke tabel 'classes' dan kolom 'class_id'
+            // (Bukan lagi class_models)
+            $table->foreignId('class_id')->constrained('classes', 'class_id')->onDelete('cascade');
 
-            $table->string('title');
-            $table->string('file_path')->nullable(); // Untuk link video atau path file
+            // PERBAIKAN 2: Hubungkan ke tabel 'teachers' dan kolom 'teacher_id'
+            $table->foreignId('teacher_id')->constrained('teachers', 'teacher_id')->onDelete('cascade');
+
+            $table->string('title', 50);
+            
+            // Enum untuk tipe (video, pdf, dll) agar lebih rapi
+            $table->enum('type', ['video', 'pdf', 'link', 'document'])->default('pdf');
+            
+            $table->text('file_path')->nullable(); 
             $table->timestamps();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('materials');

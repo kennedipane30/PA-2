@@ -65,14 +65,14 @@ class AuthController extends Controller {
             ]);
 
             Student::create([
-                'user_id' => $user->usersID,
+                'user_id' => $user->user_id,
                 'school' => '-',
                 'grade' => '12 IPA'
             ]);
 
             $otp = rand(100000, 999999);
             OtpCode::updateOrCreate(
-                ['user_id' => $user->usersID],
+                ['user_id' => $user->user_id],
                 ['email' => $user->email, 'otp_code' => (string)$otp, 'expired_at' => Carbon::now()->addMinutes(10)]
             );
 
@@ -97,14 +97,14 @@ class AuthController extends Controller {
 
         if (!$user) return response()->json(['status' => 'error', 'message' => 'User tidak ditemukan'], 404);
 
-        $otpRecord = OtpCode::where('user_id', $user->usersID)->where('otp_code', $request->otp)->first();
+        $otpRecord = OtpCode::where('user_id', $user->user_id)->where('otp_code', $request->otp)->first();
 
         if (!$otpRecord || Carbon::parse($otpRecord->expired_at)->isPast()) {
             return response()->json(['status' => 'error', 'message' => 'OTP salah atau kadaluarsa'], 401);
         }
 
         // Gunakan DB::table untuk menghindari masalah Primary Key di Eloquent saat update
-        DB::table('users')->where('usersID', $user->usersID)->update([
+        DB::table('users')->where('user_id', $user->user_id)->update([
             'is_verified' => true,
             'updated_at' => now()
         ]);
@@ -152,7 +152,7 @@ class AuthController extends Controller {
 
         $otp = rand(100000, 999999);
         OtpCode::updateOrCreate(
-            ['user_id' => $user->usersID],
+            ['user_id' => $user->user_id],
             ['email' => $user->email, 'otp_code' => (string)$otp, 'expired_at' => Carbon::now()->addMinutes(10)]
         );
 
@@ -169,7 +169,7 @@ class AuthController extends Controller {
         $user = User::where('email', strtolower(trim($request->email)))->first();
         if (!$user) return response()->json(['status' => 'error', 'message' => 'User tidak ditemukan'], 404);
 
-        $otpRecord = OtpCode::where('user_id', $user->usersID)->where('otp_code', $request->otp)->first();
+        $otpRecord = OtpCode::where('user_id', $user->user_id)->where('otp_code', $request->otp)->first();
         if (!$otpRecord || Carbon::parse($otpRecord->expired_at)->isPast()) {
             return response()->json(['status' => 'error', 'message' => 'OTP salah atau kadaluarsa'], 401);
         }
@@ -191,15 +191,15 @@ class AuthController extends Controller {
      * 7️⃣ ADMIN: GET ALL USERS
      */
     public function getAllUsers(): JsonResponse {
-        $users = User::with('role')->where('usersID', '!=', Auth::id())->orderBy('created_at', 'desc')->get();
+        $users = User::with('role')->where('user_id', '!=', Auth::id())->orderBy('created_at', 'desc')->get();
         return response()->json(['status' => 'success', 'data' => $users]);
     }
 
     /**
      * 8️⃣ ADMIN: DELETE USER
      */
-    public function deleteUser($usersID): JsonResponse {
-        $user = User::find($usersID);
+    public function deleteUser($user_id): JsonResponse {
+        $user = User::find($user_id);
         if (!$user || $user->role_id == 1) return response()->json(['status' => 'error', 'message' => 'Gagal menghapus'], 403);
         $user->delete();
         return response()->json(['status' => 'success', 'message' => 'User berhasil dihapus']);

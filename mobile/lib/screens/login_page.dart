@@ -116,7 +116,7 @@ class _LoginPageState extends State<LoginPage> {
               TextField(
                 controller: nameCtrl,
                 decoration: const InputDecoration(
-                  labelText: "Username / Nama Lengkap",
+                  labelText: "Username ",
                   prefixIcon: Icon(Icons.person_outline, color: Colors.grey),
                   enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
                   focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF990000), width: 2)),

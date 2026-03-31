@@ -20,9 +20,7 @@
         @foreach($classes as $c)
             @php
                 // Cek apakah ada jadwal mengajar hari ini untuk guru yang login
-                $canAbsen = in_array($c->class_modelsID, $jadwalHariIni);
-            @endphp
-
+                $canAbsen = in_array($c->class_id, $jadwalHariIni);
             <!-- CARD KELAS -->
             <div class="bg-white p-6 rounded-3xl shadow-sm border-l-8 transition duration-300 {{ $canAbsen ? 'border-green-500 shadow-md' : 'border-gray-200 opacity-80' }}">
                 <div class="flex justify-between items-start">
@@ -62,7 +60,7 @@
 
                 <div class="flex items-center justify-between mt-4">
                     @if($canAbsen)
-                        <a href="{{ route('pengajar.absensi.show', $c->class_modelsID) }}"
+                        <a href="{{ route('pengajar.absensi.show', $c->class_id) }}"
                            class="bg-green-600 text-white px-8 py-3 rounded-xl font-bold text-sm shadow-lg hover:bg-green-700 hover:-translate-y-1 transform transition duration-200 flex items-center">
                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
                            BUKA ABSENSI

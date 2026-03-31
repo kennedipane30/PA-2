@@ -8,11 +8,11 @@
         @csrf
         <select name="class_id" class="border p-2 rounded-lg" required>
             <option value="">Pilih Program...</option>
-            @foreach($classes as $c) <option value="{{ $c->class_modelsID }}">{{ $c->nama_program }}</option> @endforeach
+            @foreach($classes as $c) <option value="{{ $c->class_id }}">{{ $c->nama_program }}</option> @endforeach
         </select>
         <select name="teacher_id" class="border p-2 rounded-lg" required>
             <option value="">Pilih Pengajar...</option>
-            @foreach($teachers as $t) <option value="{{ $t->usersID }}">{{ $t->name }}</option> @endforeach
+            @foreach($teachers as $t) <option value="{{ $t->user_id }}">{{ $t->name }}</option> @endforeach
         </select>
         <input type="text" name="title" placeholder="Materi (Contoh: Psikologi)" class="border p-2 rounded-lg" required>
         <input type="date" name="date" class="border p-2 rounded-lg" required>
@@ -37,8 +37,8 @@
                 <td class="p-4 font-bold text-red-700">{{ $row->classModel->nama_program }}</td>
                 <td class="p-4"><b>{{ $row->title }}</b><br><small>Oleh: {{ $row->teacher->name }}</small></td>
                 <td class="p-4">
-                    <a href="{{ route('admin.jadwal.edit', $row->schedulesID) }}" class="text-blue-600 font-bold mr-2">Edit</a>
-                    <form action="{{ route('admin.jadwal.destroy', $row->schedulesID) }}" method="POST" class="inline">
+                    <a href="{{ route('admin.jadwal.edit', $row->schedule_id) }}" class="text-blue-600 font-bold mr-2">Edit</a>
+                    <form action="{{ route('admin.jadwal.destroy', $row->schedule_id) }}" method="POST" class="inline">
                         @csrf @method('DELETE')
                         <button class="text-red-600 font-bold uppercase text-xs">Hapus</button>
                     </form>

@@ -20,7 +20,7 @@
             <h4 class="font-bold border-b pb-2 mb-4 text-spekta">Bukti Pembayaran</h4>
             <img src="{{ asset('storage/'.$enroll->payment_proof) }}" class="w-full rounded-lg shadow-md border" alt="Bukti Transfer">
 
-            <form action="{{ route('admin.siswa.proses_aktivasi', $enroll->enrollmentsID) }}" method="POST" class="mt-6">
+            <form action="{{ route('admin.siswa.proses_aktivasi', $enroll->enrollment_id) }}" method="POST" class="mt-6">
                 @csrf
                 <div class="bg-red-50 p-4 rounded-xl border border-red-200">
                     <label class="block text-xs font-bold uppercase text-gray-600 mb-2">Set Masa Aktif (Hari)</label>

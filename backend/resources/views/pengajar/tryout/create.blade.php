@@ -25,7 +25,7 @@
 
     <form action="{{ route('pengajar.tryout.import') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
         @csrf
-        <input type="hidden" name="class_id" value="{{ $class->class_modelsID }}">
+        <input type="hidden" name="class_id" value="{{ $class->class_id }}">
 
         <div>
             <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Judul Tryout</label>

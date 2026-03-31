@@ -6,8 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Attendance extends Model
 {
-    // 1. MODIFIKASI: Beritahu Laravel nama PK sesuai ERD kamu
-    protected $primaryKey = 'attendancesID';
+    protected $table = 'attendances';
+
+    // 1. MODIFIKASI: Beritahu Laravel nama PK sesuai migrasi
+    protected $primaryKey = 'attendance_id';
 
     // 2. MODIFIKASI: Izinkan kolom-kolom ini diisi secara massal (PENTING!)
     protected $fillable = [
@@ -22,7 +24,7 @@ class Attendance extends Model
      */
     public function schedule()
     {
-        return $this->belongsTo(Schedule::class, 'schedule_id', 'schedulesID');
+        return $this->belongsTo(Schedule::class, 'schedule_id', 'schedule_id');
     }
 
     /**
@@ -30,6 +32,6 @@ class Attendance extends Model
      */
     public function student()
     {
-        return $this->belongsTo(User::class, 'user_id', 'usersID');
+        return $this->belongsTo(User::class, 'user_id', 'user_id');
     }
 }
