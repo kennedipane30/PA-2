@@ -8,27 +8,26 @@
 </head>
 <body class="bg-gray-100">
     <!-- Navbar -->
-    <nav class="bg-red-900 text-white p-4">
+    <nav class="bg-red-900 text-white p-4 shadow-md">
         <div class="container mx-auto flex justify-between items-center">
             <h1 class="text-2xl font-bold">SPEKTA ACADEMY - Admin</h1>
             <div class="flex items-center gap-4">
-                <span class="text-sm">{{ Auth::user()->name }}</span>
-                <form method="POST" action="{{ route('admin.logout') }}" class="inline">
+                <span class="text-sm font-medium">{{ Auth::user()->name }}</span>
+                <form method="POST" action="{{ route('logout') }}" class="inline">
                     @csrf
                     <button type="submit" class="bg-red-800 px-4 py-2 rounded hover:bg-red-700 transition text-sm">
                         Logout
                     </button>
                 </form>
-                <!-- Alternative: Direct link -->
-                <!-- <a href="{{ route('admin.logout.get') }}" class="bg-red-800 px-4 py-2 rounded hover:bg-red-700 transition text-sm">Logout</a> -->
             </div>
         </div>
     </nav>
 
     <div class="container mx-auto p-6">
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-lg shadow">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Total Users -->
+            <div class="bg-white p-6 rounded-lg shadow border-l-4 border-red-900">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-gray-600">Total Users</p>
@@ -38,7 +37,8 @@
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-lg shadow">
+            <!-- Total Students -->
+            <div class="bg-white p-6 rounded-lg shadow border-l-4 border-blue-600">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-gray-600">Total Students</p>
@@ -48,7 +48,8 @@
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-lg shadow">
+            <!-- Total Teachers -->
+            <div class="bg-white p-6 rounded-lg shadow border-l-4 border-green-600">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-gray-600">Total Teachers</p>
@@ -58,7 +59,8 @@
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-lg shadow">
+            <!-- Total Classes -->
+            <div class="bg-white p-6 rounded-lg shadow border-l-4 border-purple-600">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-gray-600">Total Classes</p>
@@ -68,7 +70,8 @@
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-lg shadow">
+            <!-- Pending Payments -->
+            <div class="bg-white p-6 rounded-lg shadow border-l-4 border-orange-600">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-gray-600">Pending Payments</p>
@@ -78,44 +81,58 @@
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-lg shadow">
+            <!-- Total Revenue -->
+            <div class="bg-white p-6 rounded-lg shadow border-l-4 border-emerald-600">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-gray-600">Total Revenue</p>
-                        <p class="text-2xl font-bold text-green-600">Rp {{ number_format($stats['total_revenue'], 0, ',', '.') }}</p>
+                        <p class="text-2xl font-bold text-emerald-600">Rp {{ number_format($stats['total_revenue'], 0, ',', '.') }}</p>
                     </div>
-                    <div class="text-green-600 text-4xl">💰</div>
+                    <div class="text-emerald-600 text-4xl">💰</div>
                 </div>
             </div>
         </div>
 
         <!-- Quick Actions -->
         <div class="bg-white p-6 rounded-lg shadow">
-            <h2 class="text-xl font-bold mb-4">Quick Actions</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <a href="{{ route('admin.users.index') }}" 
-                   class="bg-red-900 text-white p-4 rounded-lg text-center hover:bg-red-800 transition">
+            <h2 class="text-xl font-bold mb-6 text-gray-800">Quick Actions</h2>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                
+                <!-- Manage Users -->
+                <a href="{{ route('admin.siswa.index') }}" 
+                   class="bg-red-900 text-white p-4 rounded-lg text-center hover:bg-red-800 transition shadow">
                     <div class="text-3xl mb-2">👥</div>
-                    <div>Manage Users</div>
+                    <div class="text-sm font-semibold">Manage Users</div>
                 </a>
 
-                <a href="{{ route('admin.classes.index') }}" 
-                   class="bg-blue-600 text-white p-4 rounded-lg text-center hover:bg-blue-700 transition">
+                <!-- Manage Classes -->
+                <a href="{{ route('admin.jadwal.index') }}" 
+                   class="bg-blue-600 text-white p-4 rounded-lg text-center hover:bg-blue-700 transition shadow">
                     <div class="text-3xl mb-2">📚</div>
-                    <div>Manage Classes</div>
+                    <div class="text-sm font-semibold">Manage Classes</div>
                 </a>
 
-                <a href="{{ route('admin.payments.index') }}" 
-                   class="bg-green-600 text-white p-4 rounded-lg text-center hover:bg-green-700 transition">
+                <!-- Verify Payments -->
+                <a href="{{ route('admin.pembayaran.index') }}" 
+                   class="bg-green-600 text-white p-4 rounded-lg text-center hover:bg-green-700 transition shadow">
                     <div class="text-3xl mb-2">💳</div>
-                    <div>Verify Payments</div>
+                    <div class="text-sm font-semibold">Verify Payments</div>
+                </a>
+                
+                <!-- Manage Gallery -->
+                <a href="{{ route('admin.galeri.index') }}" 
+                   class="bg-yellow-600 text-white p-4 rounded-lg text-center hover:bg-yellow-700 transition shadow">
+                    <div class="text-3xl mb-2">🖼️</div>
+                    <div class="text-sm font-semibold">Manage Gallery</div>
                 </a>
 
+                <!-- Reports -->
                 <a href="#" 
-                   class="bg-purple-600 text-white p-4 rounded-lg text-center hover:bg-purple-700 transition">
+                   class="bg-purple-600 text-white p-4 rounded-lg text-center hover:bg-purple-700 transition shadow">
                     <div class="text-3xl mb-2">📊</div>
-                    <div>Reports</div>
+                    <div class="text-sm font-semibold">Reports</div>
                 </a>
+
             </div>
         </div>
     </div>

@@ -10,22 +10,31 @@ class AdminDashboardController extends Controller
 {
     public function index()
     {
-        // Statistik untuk dashboard (Syarat Matkul Proyek II)
+        // 1. Ambil data dasar
         $total_siswa = User::where('role_id', 3)->count();
         $total_pengajar = User::where('role_id', 2)->count();
 
-        return view('admin.dashboard', compact('total_siswa', 'total_pengajar'));
+        // 2. Siapkan array $stats dengan SEMUA key yang dipanggil di View
+        $stats = [
+            'total_users'      => User::count(),
+            'total_students'   => $total_siswa,
+            'total_teachers'   => $total_pengajar,
+            'total_classes'    => 0, // Sementara isi 0 agar tidak error
+            'pending_payments' => 0, // Sementara isi 0
+            'total_revenue'    => 0, // TAMBAHKAN INI untuk memperbaiki error baris 84
+        ];
+
+        // 3. Kirim ke view (Jangan lupa kirim total_siswa karena baris 34 di view memanggilnya langsung)
+        return view('admin.dashboard', compact('total_siswa', 'stats'));
     }
 
     public function galeri()
     {
-        // Diperbaiki: diarahkan ke folder admin -> folder galeri -> file index
         return view('admin.galeri.index');
     }
 
     public function pengumuman()
     {
-        // Diperbaiki: diarahkan ke folder admin -> folder pengumuman -> file index
         return view('admin.pengumuman.index');
     }
 }

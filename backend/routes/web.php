@@ -31,13 +31,16 @@ Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
 
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    
+    // Rute logout khusus admin agar bisa dipanggil route('admin.logout')
+    Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
 
     // Manajemen Pengumuman
     Route::get('/pengumuman', [PengumumanController::class, 'index'])->name('pengumuman.index');
     Route::post('/pengumuman', [PengumumanController::class, 'store'])->name('pengumuman.store');
     Route::delete('/pengumuman/{id}', [PengumumanController::class, 'destroy'])->name('pengumuman.destroy');
 
-    // --- CRUD GALERI LENGKAP ---
+    // CRUD GALERI
     Route::get('/galeri', [GaleriController::class, 'index'])->name('galeri.index');
     Route::post('/galeri', [GaleriController::class, 'store'])->name('galeri.store');
     Route::get('/galeri/edit/{id}', [GaleriController::class, 'edit'])->name('galeri.edit');
@@ -60,8 +63,17 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/pembayaran', [PembayaranController::class, 'index'])->name('pembayaran.index');
     Route::post('/pembayaran/verifikasi/{id}', [PembayaranController::class, 'verifikasi'])->name('pembayaran.verify');
     Route::get('/promo', [PembayaranController::class, 'promo'])->name('promo');
-});
 
+}); // Akhir Group Admin
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+    // TAMBAHKAN BARIS INI (Contoh diarahkan ke controller yang sudah ada atau buat baru)
+    Route::get('/users', [AdminDashboardController::class, 'index'])->name('users.index'); 
+
+    // ... route lainnya ...
+});
 
 // --- 2. GROUP PENGAJAR (Role: Pengajar) ---
 Route::middleware(['auth', 'role:pengajar'])->prefix('pengajar')->name('pengajar.')->group(function () {
@@ -80,11 +92,13 @@ Route::middleware(['auth', 'role:pengajar'])->prefix('pengajar')->name('pengajar
 
     // Tryout
     Route::get('/soal-tryout', [TryoutController::class, 'buatSoal'])->name('tryout.create');
-     Route::post('/soal-tryout/import', [TryoutController::class, 'importSoal'])->name('tryout.import');
+    Route::post('/soal-tryout/import', [TryoutController::class, 'importSoal'])->name('tryout.import');
     Route::get('/nilai', [TryoutController::class, 'lihatNilai'])->name('tryout.nilai');
-});
 
-// Jalur khusus untuk melihat gambar jika tidak menggunakan symlink (php artisan storage:link)
+}); // Akhir Group Pengajar
+
+
+// Jalur khusus untuk melihat gambar
 Route::get('/view-galeri/{filename}', function ($filename) {
     $path = 'public/galeri/' . $filename;
     if (!Storage::exists($path)) { abort(404); }
