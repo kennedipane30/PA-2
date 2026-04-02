@@ -2,7 +2,7 @@ const midtransClient = require('midtrans-client');
 
 let snap = new midtransClient.Snap({
     isProduction : false, // Tetap false karena kita di Sandbox
-// server key tidak boleh di frontend});
+// server key tidak boleh di frontend});jwaf
 
 let parameter = {
     "transaction_details": {
@@ -15,4 +15,4 @@ snap.createTransaction(parameter)
     .then((transaction)=>{
         let transactionToken = transaction.token;
         console.log('Token:', transactionToken);
-    });
+    }); 
