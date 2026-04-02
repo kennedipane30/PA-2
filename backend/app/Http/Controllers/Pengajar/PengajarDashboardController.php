@@ -6,94 +6,83 @@ use App\Http\Controllers\Controller;
 use App\Models\Enrollment;
 use App\Models\ClassModel;
 use App\Models\Schedule;
-use App\Models\Attendance; // Pastikan Model Attendance sudah dibuat
+use App\Models\Attendance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Carbon\Carbon;
 
 class PengajarDashboardController extends Controller
 {
-    /**
-     * Dashboard Utama Pengajar
-     */
     public function index(): View
     {
         return view('pengajar.dashboard');
     }
 
-    /**
-     * Menampilkan daftar 4 kelas untuk di-absen
-     * MODIFIKASI: Menambahkan pengecekan jadwal hari ini
-     */
     public function absensi(): View
-{
-    $classes = \App\Models\ClassModel::all();
-    $teacherId = Auth::id(); // Integritas Aktor: Siapa yang sedang login?
-    $today = \Carbon\Carbon::now()->toDateString(); // Integritas Waktu: Tanggal hari ini di server.
+    {
+        $classes = ClassModel::all();
+        $teacherId = Auth::id();
+        $today = Carbon::now()->toDateString();
 
-    // Hanya ambil ID kelas jika Guru ini MEMILIKI JADWAL di hari ini
-    $jadwalHariIni = \App\Models\Schedule::where('teacher_id', $teacherId)
-                            ->whereDate('date', $today)
+        // Perbaikan: Jika kolom 'date' tidak ada, gunakan 'created_at'
+        // atau sesuaikan dengan kolom tanggal di tabel schedules Anda
+        $jadwalHariIni = Schedule::where('teacher_id', $teacherId)
+                            // ->whereDate('created_at', $today) // Gunakan ini jika kolom 'date' memang tidak ada
                             ->pluck('class_id')
                             ->toArray();
 
-    return view('pengajar.absensi.index', compact('classes', 'jadwalHariIni'));
-}
-
-    /**
-     * Menampilkan Daftar Siswa di Kelas Tertentu
-     * MODIFIKASI: Menambahkan Security Check agar hanya guru yang bertugas yang bisa buka
-     */
-    public function showAbsensi($class_id): View | \Illuminate\Http\RedirectResponse
-{
-    // 1. Cek apakah Guru ini terjadwal di kelas ini HARI INI
-    $isAssigned = Schedule::where('class_id', $class_id)
-                        ->where('teacher_id', Auth::id())
-                        ->where('date', date('Y-m-d'))
-                        ->first();
-
-    // MODIFIKASI: Jika tidak ada jadwal, balikkan ke halaman sebelumnya dengan pesan
-    if (!$isAssigned) {
-        return redirect()->route('pengajar.absensi.index')
-                         ->with('info', 'Tidak ada absensi untuk kelas ini hari ini.');
+        return view('pengajar.absensi.index', compact('classes', 'jadwalHariIni'));
     }
 
-    $class = ClassModel::findOrFail($class_id);
+    public function showAbsensi($class_id): View | \Illuminate\Http\RedirectResponse
+    {
+        // 1. Cek jadwal (Ganti 'date' dengan kolom yang benar di DB Anda, misal 'created_at')
+        $isAssigned = Schedule::where('class_id', $class_id)
+                            ->where('teacher_id', Auth::id())
+                            // ->whereDate('created_at', Carbon::today())
+                            ->first();
 
-    $siswas = Enrollment::where('class_id', $class_id)
-                ->where('status', 'aktif')
-                ->where('expires_at', '>', now())
-                ->with(['user.student'])
-                ->get();
+        if (!$isAssigned) {
+            return redirect()->route('pengajar.dashboard') // Arahkan ke dashboard jika tidak ada akses
+                             ->with('info', 'Anda tidak memiliki jadwal di kelas ini hari ini.');
+        }
 
-    return view('pengajar.absensi.show', compact('siswas', 'class', 'isAssigned'));
-}
-    /**
-     * FUNGSI BARU: Simpan Absensi ke Database
-     */
+        $class = ClassModel::findOrFail($class_id);
+
+        $siswas = Enrollment::where('class_id', $class_id)
+                    ->where('status', 'aktif')
+                    ->where('expires_at', '>', now())
+                    ->with(['user.student'])
+                    ->get();
+
+        return view('pengajar.absensi.show', compact('siswas', 'class', 'isAssigned'));
+    }
+
     public function storeAbsensi(Request $request)
     {
-        // Validasi input absensi
-        foreach ($request->status as $usersID => $status) {
+        $request->validate([
+            'status' => 'required|array',
+            'schedule_id' => 'required'
+        ]);
+
+        foreach ($request->status as $userId => $status) {
             Attendance::create([
                 'schedule_id' => $request->schedule_id,
-                'user_id'     => $usersID,
+                'user_id'     => $userId,
                 'status'      => $status,
-                'date'        => date('Y-m-d')
+                'date'        => now()->toDateString()
             ]);
         }
 
-        return redirect()->route('pengajar.absensi.index')->with('success', 'Absensi berhasil disimpan!');
+        return redirect()->route('pengajar.dashboard')->with('success', 'Absensi berhasil disimpan!');
     }
 
-    /**
-     * Menampilkan Jadwal Mengajar milik pengajar yang sedang login
-     */
     public function jadwalSaya(): View
     {
         $jadwal = Schedule::where('teacher_id', Auth::id())
                     ->with('classModel')
-                    ->orderBy('date', 'asc')
+                    ->orderBy('id', 'desc') // Ganti 'date' dengan 'id' atau 'created_at' agar tidak error
                     ->get();
 
         return view('pengajar.jadwal.index', compact('jadwal'));

@@ -8,17 +8,17 @@ use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\WebAuthController;
 use App\Http\Controllers\Admin\{
     DashboardController, // Gunakan DashboardController yang baru kita perbaiki
-    GaleriController, 
-    PembayaranController, 
-    PengumumanController, 
-    JadwalController, 
+    GaleriController,
+    PembayaranController,
+    PengumumanController,
+    JadwalController,
     ManajemenPengajarController,
-    ProgramController, 
+    ProgramController,
     SiswaAdminController
 };
 use App\Http\Controllers\Pengajar\{
-    PengajarDashboardController, 
-    MateriController, 
+    PengajarDashboardController,
+    MateriController,
     TryoutController
 };
 
@@ -43,7 +43,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // MANAJEMEN SISWA
     Route::prefix('siswa')->name('siswa.')->group(function () {
-        Route::get('/semua', [SiswaAdminController::class, 'semuaSiswa'])->name('index'); 
+        Route::get('/semua', [SiswaAdminController::class, 'semuaSiswa'])->name('index');
         Route::get('/daftar-tunggu', [SiswaAdminController::class, 'daftarTunggu'])->name('pendaftaran');
         Route::get('/verifikasi/{id}', [SiswaAdminController::class, 'verifikasi'])->name('verifikasi');
     });
@@ -72,16 +72,16 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // MANAJEMEN PROMO
     Route::prefix('promo')->name('promo.')->group(function () {
-        Route::get('/', [PembayaranController::class, 'promo'])->name('index'); 
-        Route::post('/store', [PembayaranController::class, 'storePromo'])->name('store'); 
-        Route::delete('/destroy/{id}', [PembayaranController::class, 'destroyPromo'])->name('destroy'); 
-        Route::post('/check', [PembayaranController::class, 'checkPromo'])->name('check'); 
+        Route::get('/', [PembayaranController::class, 'promo'])->name('index');
+        Route::post('/store', [PembayaranController::class, 'storePromo'])->name('store');
+        Route::delete('/destroy/{id}', [PembayaranController::class, 'destroyPromo'])->name('destroy');
+        Route::post('/check', [PembayaranController::class, 'checkPromo'])->name('check');
     });
 
     // Manajemen Pengumuman
-    Route::get('/pengumuman', [PengumumanController::class, 'index'])->name('pengumuman.index');
-    Route::post('/pengumuman', [PengumumanController::class, 'store'])->name('pengumuman.store');
-    Route::delete('/pengumuman/{id}', [PengumumanController::class, 'destroy'])->name('pengumuman.destroy');
+    // Route::get('/pengumuman', [PengumumanController::class, 'index'])->name('pengumuman.index');
+    // Route::post('/pengumuman', [PengumumanController::class, 'store'])->name('pengumuman.store');
+    // Route::delete('/pengumuman/{id}', [PengumumanController::class, 'destroy'])->name('pengumuman.destroy');
 
     // Resource Routes
     Route::resource('galeri', GaleriController::class);
@@ -96,11 +96,15 @@ Route::middleware(['auth', 'role:pengajar'])->prefix('pengajar')->name('pengajar
     Route::get('/absensi', [PengajarDashboardController::class, 'absensi'])->name('absensi.index');
     Route::get('/absensi/{class_id}', [PengajarDashboardController::class, 'showAbsensi'])->name('absensi.show');
     Route::post('/absensi/simpan', [PengajarDashboardController::class, 'storeAbsensi'])->name('absensi.store');
-    
+
     Route::resource('materi', MateriController::class);
-    
+
     Route::get('/soal-tryout', [TryoutController::class, 'buatSoal'])->name('tryout.create');
     Route::get('/nilai', [TryoutController::class, 'lihatNilai'])->name('tryout.nilai');
+
+        Route::get('/materi', [MateriController::class, 'index'])->name('materi.index');
+    Route::post('/materi', [MateriController::class, 'store'])->name('materi.store');
+    Route::delete('/materi/{id}', [MateriController::class, 'destroy'])->name('materi.destroy');
 });
 
 

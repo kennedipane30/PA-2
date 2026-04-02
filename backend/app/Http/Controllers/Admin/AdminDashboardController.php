@@ -4,39 +4,35 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Payment;    // Import Model Payment
+use App\Models\ClassModel; // Import Model Class (Sesuai ERD kamu)
 use Illuminate\Http\Request;
-// Hapus atau comment baris yang menyebabkan error jika modelnya memang belum ada
-// use App\Models\Classes; 
-// use App\Models\Payment;
 
 class AdminDashboardController extends Controller
 {
     public function index()
     {
-        // 1. Ambil data dasar dari User (Ini pasti ada)
-        // Kita gunakan role_id jika Anda menggunakan angka, atau whereHas jika menggunakan tabel roles
-        $total_siswa = User::whereHas('role', fn($q) => $q->where('nama_role', 'student'))->count();
-        $total_pengajar = User::whereHas('role', fn($q) => $q->where('nama_role', 'teacher'))->count();
+        // 1. Ambil data dasar (Gunakan 'name' sesuai ERD tabel roles kamu)
+        $total_siswa = User::whereHas('role', fn($q) => $q->where('name', 'siswa'))->count();
+        $total_pengajar = User::whereHas('role', fn($q) => $q->where('name', 'pengajar'))->count();
 
-        // 2. Siapkan array $stats
+        // 2. Siapkan data statistik untuk dashboard
         $stats = [
             'total_users'      => User::count(),
             'total_students'   => $total_siswa,
             'total_teachers'   => $total_pengajar,
-            
-            // GUNAKAN TRY-CATCH atau NILAI MANUAL agar tidak error jika Model belum dibuat
-            'total_classes'    => class_exists('App\Models\Classes') ? \App\Models\Classes::count() : 0,
-            'pending_payments' => class_exists('App\Models\Payment') ? \App\Models\Payment::where('status', 'pending')->count() : 0,
-            'total_revenue'    => class_exists('App\Models\Payment') ? \App\Models\Payment::where('status', 'verified')->sum('total') : 0,
+            'total_classes'    => ClassModel::count(), // Menggunakan ClassModel sesuai ERD
+            'pending_payments' => Payment::where('status', 'pending')->count(),
+            'total_revenue'    => Payment::where('status', 'verified')->sum('total_bayar'),
         ];
 
-        // 3. Ambil data pendaftaran terbaru (Pastikan pendaftaranTerbaru ada agar Blade tidak error)
-        $pendaftaranTerbaru = User::whereHas('role', fn($q) => $q->where('nama_role', 'student'))
+        // 3. Ambil data siswa yang baru mendaftar (untuk Log Aktivitas)
+        $pendaftaranTerbaru = User::where('role_id', 3) // Role 3 adalah siswa
                                     ->latest()
                                     ->take(5)
                                     ->get();
 
-        // 4. Kirim ke view
+        // 4. Kirim ke view dashboard
         return view('admin.dashboard', compact('stats', 'pendaftaranTerbaru'));
     }
 
