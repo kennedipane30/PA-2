@@ -11,14 +11,9 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    // 1. SINKRONISASI PRIMARY KEY (WAJIB)
-    // Sesuai migrasi terakhir: $table->id('user_id');
     protected $primaryKey = 'user_id'; 
-
-    // Beritahu Laravel bahwa PK-nya bertipe auto-increment
     public $incrementing = true;
 
-    // 2. DAFTAR KOLOM YANG BOLEH DIISI (Sesuai CDM)
     protected $fillable = [
         'name',
         'email',
@@ -27,40 +22,60 @@ class User extends Authenticatable
         'role_id',
         'otp_code',
         'is_verified',
-        'user_id'
     ];
 
-    // Sembunyikan kolom sensitif saat dikirim ke Flutter (API)
     protected $hidden = [
         'password',
         'remember_token',
         'otp_code',
     ];
 
-    // --- RELASI SESUAI STRUKTUR BARU ---
+    // ==========================================
+    // 1. SCOPES (Untuk mempermudah pemanggilan di Controller)
+    // ==========================================
 
     /**
-     * Relasi ke Tabel Student (Satu User memiliki satu profil Student)
+     * Scope untuk mengambil hanya Siswa
      */
+    public function scopeStudents($query)
+    {
+        return $query->whereHas('role', function($q) {
+            $q->where('nama_role', 'student')->orWhere('nama_role', 'siswa');
+        })->orWhere('role_id', 3); // Fallback jika ID-nya 3
+    }
+
+    /**
+     * Scope untuk mengambil hanya Pengajar
+     */
+    public function scopeTeachers($query)
+    {
+        return $query->whereHas('role', function($q) {
+            $q->where('nama_role', 'teacher')->orWhere('nama_role', 'pengajar');
+        })->orWhere('role_id', 2); // Fallback jika ID-nya 2
+    }
+
+    // ==========================================
+    // 2. RELASI
+    // ==========================================
+
     public function student()
     {
         return $this->hasOne(Student::class, 'user_id', 'user_id');
     }
 
-    /**
-     * Relasi ke Tabel Teacher (Satu User memiliki satu profil Teacher)
-     */
     public function teacher()
     {
         return $this->hasOne(Teacher::class, 'user_id', 'user_id');
     }
 
-    /**
-     * Relasi ke Tabel Role (Admin, Siswa, Guru)
-     */
+    public function enrollments() 
+    {
+        return $this->hasMany(Enrollment::class, 'user_id', 'user_id');
+    }
+
     public function role()
     {
-        // Hubungkan role_id di tabel users ke rolesID di tabel roles
-        return $this->belongsTo(Role::class, 'role_id', 'rolesID');
+        // Pastikan tabel roles menggunakan primary key 'role_id'
+        return $this->belongsTo(Role::class, 'role_id', 'role_id');
     }
 }

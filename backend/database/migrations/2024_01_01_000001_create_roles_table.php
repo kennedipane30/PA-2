@@ -7,13 +7,13 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     public function up(): void
-    {
-        Schema::create('roles', function (Blueprint $table) {
-            $table->id();
-            $table->string('nama_role')->unique();
-            $table->timestamps();
-        });
-    }
+{
+    Schema::create('roles', function (Blueprint $table) {
+        $table->id('role_id'); // Nama Primary Key
+        $table->string('nama_role');
+        $table->timestamps();
+    });
+}
 
     public function down(): void
     {

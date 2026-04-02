@@ -8,17 +8,16 @@ use Illuminate\Support\Facades\Auth;
 
 class CheckRole
 {
-    public function handle(Request $request, Closure $next, $role)
-    {
-        if (!Auth::check()) {
-            return redirect('/login');
-        }
-
-        // MODIFIKASI: Cek menggunakan properti 'name' sesuai ERD
-        if ($request->user()->role->name !== $role) {
-            abort(403, 'Akses ditolak!');
-        }
-
-        return $next($request);
+    public function handle($request, Closure $next, $role) {
+    if (!Auth::check()) {
+        return redirect('/login');
     }
+
+    // PERBAIKAN: Ganti .name menjadi .nama_role
+    if ($request->user()->role->nama_role !== $role) {
+        abort(403, 'Akses ditolak!');
+    }
+
+    return $next($request);
+}
 }

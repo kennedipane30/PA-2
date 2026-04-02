@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'login_page.dart'; 
 import 'dart:convert';
+import 'dart:async'; // 1. TAMBAHKAN UNTUK TIMER
 
 class OtpPage extends StatefulWidget {
   final String name;
@@ -22,6 +23,45 @@ class _OtpPageState extends State<OtpPage> {
   final Color spektaRed = const Color(0xFF990000);
   bool _isLoading = false;
 
+  // VARIABEL UNTUK TIMER
+  Timer? _timer;
+  int _start = 60;
+  bool _isResendDisabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    startTimer(); // Mulai timer saat halaman dibuka
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel(); // Hapus timer saat pindah halaman
+    super.dispose();
+  }
+
+  void startTimer() {
+    _isResendDisabled = true;
+    _start = 60;
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_start == 0) {
+        setState(() {
+          timer.cancel();
+          _isResendDisabled = false;
+        });
+      } else {
+        setState(() => _start--);
+      }
+    });
+  }
+
+  // Fungsi untuk menyensor email (Contoh: st***@gmail.com)
+  String maskEmail(String email) {
+    final parts = email.split('@');
+    if (parts[0].length <= 2) return email;
+    return "${parts[0].substring(0, 2)}***@${parts[1]}";
+  }
+
   void handleVerify() async {
     if (otpCtrl.text.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -32,7 +72,6 @@ class _OtpPageState extends State<OtpPage> {
 
     setState(() => _isLoading = true);
 
-    // Tampilkan Loading Dialog
     showDialog(
       context: context, 
       barrierDismissible: false, 
@@ -40,21 +79,16 @@ class _OtpPageState extends State<OtpPage> {
     );
 
     try {
-      // Mengirim email dan otp ke backend
       var resp = await AuthService.verifyRegistration(widget.email, otpCtrl.text);
 
       if (!mounted) return;
-      Navigator.pop(context); // Tutup Loading Dialog
+      Navigator.pop(context); 
 
       if (resp.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: Colors.green, 
-            content: Text("Akun Berhasil Diaktifkan! Silakan Login.")
-          )
+          const SnackBar(backgroundColor: Colors.green, content: Text("Akun Aktif! Silakan Login."))
         );
 
-        // Redirect ke Login dan hapus history
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -63,10 +97,7 @@ class _OtpPageState extends State<OtpPage> {
       } else {
         final errorBody = jsonDecode(resp.body);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: Colors.red, 
-            content: Text(errorBody['message'] ?? "Kode OTP Salah atau Kadaluarsa")
-          )
+          SnackBar(backgroundColor: Colors.red, content: Text(errorBody['message'] ?? "OTP Salah"))
         );
       }
     } catch (e) {
@@ -84,52 +115,49 @@ class _OtpPageState extends State<OtpPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Verifikasi Akun"),
         backgroundColor: Colors.white,
         foregroundColor: spektaRed,
         elevation: 0,
-        centerTitle: true,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 30),
         child: Column(
           children: [
-            const SizedBox(height: 40),
-            const Icon(Icons.mark_email_read_outlined, size: 80, color: Color(0xFF990000)),
+            const Icon(Icons.mark_email_read_rounded, size: 100, color: Color(0xFF990000)),
             const SizedBox(height: 30),
             Text(
               "Halo ${widget.name},",
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 15),
+            const SizedBox(height: 10),
             const Text(
-              "Kami telah mengirimkan kode OTP ke email:",
+              "Masukkan 6 digit kode verifikasi yang dikirim ke:",
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+              style: TextStyle(color: Colors.grey, fontSize: 14),
             ),
             Text(
-              widget.email,
+              maskEmail(widget.email), // Email sudah disensor
               style: TextStyle(fontWeight: FontWeight.bold, color: spektaRed, fontSize: 16),
             ),
             
-            const SizedBox(height: 50), // --- TULISAN SIMULASI SUDAH DIHAPUS ---
+            const SizedBox(height: 40),
             
             TextField(
               controller: otpCtrl,
               textAlign: TextAlign.center,
               keyboardType: TextInputType.number,
               maxLength: 6,
-              style: const TextStyle(fontSize: 32, letterSpacing: 20, fontWeight: FontWeight.bold, color: Color(0xFF990000)),
+              style: const TextStyle(fontSize: 35, letterSpacing: 15, fontWeight: FontWeight.bold, color: Color(0xFF990000)),
               decoration: InputDecoration(
-                hintText: "000000",
+                hintText: "------",
                 counterText: "",
-                hintStyle: TextStyle(color: Colors.grey.shade300, letterSpacing: 20),
+                hintStyle: TextStyle(color: Colors.grey.shade300),
                 enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
-                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: spektaRed, width: 2)),
+                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: spektaRed, width: 3)),
               ),
             ),
             
-            const SizedBox(height: 60),
+            const SizedBox(height: 50),
             
             _isLoading 
             ? CircularProgressIndicator(color: spektaRed)
@@ -138,20 +166,30 @@ class _OtpPageState extends State<OtpPage> {
                   backgroundColor: spektaRed,
                   minimumSize: const Size(double.infinity, 60),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                  elevation: 2,
                 ),
                 onPressed: handleVerify,
-                child: const Text("VERIFIKASI & AKTIFKAN", 
+                child: const Text("VERIFIKASI SEKARANG", 
                   style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)
                 ),
               ),
             
-            const SizedBox(height: 20),
-            TextButton(
-              onPressed: () {
-                // Tambahkan fungsi kirim ulang jika diperlukan
-              },
-              child: Text("Tidak menerima email? Kirim ulang", style: TextStyle(color: spektaRed)),
+            const SizedBox(height: 30),
+
+            // TAMPILAN TOMBOL KIRIM ULANG DENGAN TIMER
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text("Tidak menerima kode? ", style: TextStyle(color: Colors.grey, fontSize: 13)),
+                _isResendDisabled 
+                ? Text("Tunggu $_start detik", style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13))
+                : TextButton(
+                    onPressed: () {
+                      // Panggil fungsi kirim ulang di sini
+                      startTimer(); // Reset timer setelah klik
+                    },
+                    child: Text("Kirim Ulang", style: TextStyle(color: spektaRed, fontWeight: FontWeight.bold)),
+                  ),
+              ],
             )
           ],
         ),

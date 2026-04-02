@@ -12,9 +12,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('attendances', function (Blueprint $table) {
+            // 1. Primary Key untuk tabel ini
             $table->id('attendance_id');
-            $table->foreignId('schedule_id')->constrained('schedules', 'schedule_id')->onDelete('cascade');
-            $table->foreignId('user_id')->constrained('users', 'user_id')->onDelete('cascade');
+
+            // 2. Relasi ke Jadwal (Schedules)
+            // PERBAIKAN: Gunakan 'id' sebagai referensi, karena di tabel schedules kuncinya bernama 'id'
+            $table->foreignId('schedule_id')
+                  ->constrained('schedules', 'id') 
+                  ->onDelete('cascade');
+
+            // 3. Relasi ke Siswa (Users)
+            // Tetap gunakan 'user_id' karena kita sudah mengubahnya di tabel users
+            $table->foreignId('user_id')
+                  ->constrained('users', 'user_id') 
+                  ->onDelete('cascade');
+
             $table->enum('status', ['hadir', 'izin', 'sakit', 'alfa']);
             $table->date('date');
             $table->timestamps();

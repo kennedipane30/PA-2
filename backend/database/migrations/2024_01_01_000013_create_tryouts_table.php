@@ -6,14 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('tryouts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('class_id')->constrained('classes')->onDelete('cascade');
+
+            // PERBAIKAN: Ubah rujukan dari 'classes' menjadi 'programs'
+            $table->foreignId('class_id')
+                  ->constrained('programs') 
+                  ->onDelete('cascade');
+
             $table->string('judul');
             $table->text('deskripsi')->nullable();
-            $table->integer('durasi'); // in minutes
+            $table->integer('durasi'); // dalam menit
             $table->integer('passing_score')->default(70);
             $table->boolean('is_active')->default(true);
             $table->timestamp('start_time')->nullable();
@@ -22,6 +30,9 @@ return new class extends Migration
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('tryouts');

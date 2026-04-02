@@ -4,6 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController; 
 use App\Http\Controllers\Admin\GaleriController;
+use App\Http\Controllers\Admin\PembayaranController;
+use App\Http\Controllers\Api\MidtransController; // <--- IMPORT CONTROLLER MIDTRANS
 
 /*
 |--------------------------------------------------------------------------
@@ -11,41 +13,45 @@ use App\Http\Controllers\Admin\GaleriController;
 |--------------------------------------------------------------------------
 */
 
-// --- 1. PUBLIC ROUTES (Akses Tanpa Token/Login) ---
-
-// Registrasi Siswa (Memicu pengiriman OTP ke Email)
+// --- 1. PUBLIC ROUTES (Tanpa Login) ---
 Route::post('/register', [AuthController::class, 'registerSiswa']); 
-
-// Verifikasi Pendaftaran
 Route::post('/verify-registration', [AuthController::class, 'verifyRegistration']); 
-
-// Login
 Route::post('/login', [AuthController::class, 'login']);
-
-// Galeri (Untuk Fitur Berita/Aktivitas di Mobile)
 Route::get('/galeri', [GaleriController::class, 'getApi']); 
-
-
-// --- JALUR LUPA PASSWORD ---
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
+/**
+ * WEBHOOK MIDTRANS (Sangat Penting)
+ * Jalur ini harus Public agar server Midtrans bisa mengirim data laporan 
+ * pembayaran otomatis ke website Anda tanpa terhalang sistem login.
+ */
+Route::post('/midtrans/callback', [MidtransController::class, 'callback']);
 
 
-// --- 2. PROTECTED ROUTES (Harus Login / Pakai Token) ---
+// --- 2. PROTECTED ROUTES (Harus Login / Token Sanctum) ---
 Route::middleware('auth:sanctum')->group(function () {
 
-    // Ambil Data Profil User & Role yang sedang login
+    // Profil User
     Route::get('/user', function (Request $request) {
         return $request->user()->load('role', 'student');
     });
 
+    // Update Profil & Logout
     Route::post('/update-profile', [AuthController::class, 'updateProfile']);
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    // --- FITUR UMUM (Bisa diakses Admin & Siswa) ---
+    Route::post('/admin/promo/check', [PembayaranController::class, 'checkPromo']);
 
 
     // --- 3. KHUSUS ROLE SISWA ---
     Route::middleware('role:siswa')->group(function () {
+        
+        // FITUR PEMBAYARAN MIDTRANS (Tanpa Bukti Transaksi)
+        // Siswa memanggil ini untuk mendapatkan Snap Token
+        Route::post('/midtrans/token', [MidtransController::class, 'getSnapToken']);
+
         Route::post('/class/content', [AuthController::class, 'getClassContent']);
         Route::post('/class/check-status', [AuthController::class, 'checkClassStatus']);
         Route::post('/class/join', [AuthController::class, 'joinClass']);
@@ -56,13 +62,9 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
 
-    // --- 4. KHUSUS ROLE ADMIN (Manajemen User) ---
-    // Fitur ini memungkinkan Admin menghapus user langsung dari aplikasi
+    // --- 4. KHUSUS ROLE ADMIN ---
     Route::middleware('role:admin')->group(function () {
-        // Mendapatkan semua daftar user untuk ditampilkan di Dashboard Admin
         Route::get('/admin/users', [AuthController::class, 'getAllUsers']);
-        
-        // Menghapus user berdasarkan ID (user_id sesuai primary key)
         Route::delete('/admin/users/{user_id}', [AuthController::class, 'deleteUser']);
     });
 

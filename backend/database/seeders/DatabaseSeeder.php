@@ -7,17 +7,17 @@ use App\Models\User;
 use App\Models\Role;
 use App\Models\Teacher;
 use App\Models\Category;
-use App\Models\CourseClass; // <--- GUNAKAN INI
+use App\Models\CourseClass; // Pastikan model ini mengarah ke tabel 'programs' atau 'classes'
 use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Buat Role (Sesuai Migration 0000)
-        $adminRole = Role::create(['name' => 'admin']);
-        $guruRole  = Role::create(['name' => 'pengajar']);
-        $siswaRole = Role::create(['name' => 'siswa']);
+        // 1. Buat Role (PERBAIKAN: Ganti 'name' menjadi 'nama_role')
+        $adminRole = Role::create(['nama_role' => 'admin']);
+        $guruRole  = Role::create(['nama_role' => 'pengajar']);
+        $siswaRole = Role::create(['nama_role' => 'siswa']);
 
         // 2. Buat User Admin
         User::create([
@@ -44,38 +44,45 @@ class DatabaseSeeder extends Seeder
             'specialization' => 'TPA & Kesamaptaan'
         ]);
 
-        // 4. Buat Kategori
+        // 4. Buat Kategori (Cek apakah kolomnya 'name' atau 'nama_kategori' di migrasi Anda)
         $kategori = Category::create([
             'name' => 'Program Utama',
             'slug' => 'program-utama'
         ]);
 
-        // 5. Masukkan Data ke Tabel 'classes' menggunakan Model 'CourseClass'
+        // 5. Masukkan Data ke Tabel Program Kelas
+        // Sesuaikan nama kolom (title, description, price) dengan file migrasi 'programs' Anda
         $programs = [
             [
                 'title' => 'CALON ABDI NEGARA',
                 'description' => 'Bimbingan Belajar TNI - POLRI - SEKDIN',
                 'price' => 900000,
-                'teachers_id' => $teacherData->teacher_id,
-                'category_id' => $kategori->id,
-                'start_date' => '2026-04-01',
-                'end_date' => '2026-12-31',
+                // 'teachers_id' => $teacherData->teacher_id, // Opsional, sesuaikan kolom di DB
+                // 'category_id' => $kategori->id,           // Opsional
             ],
             [
                 'title' => 'PTN & UNHAN',
                 'description' => 'Persiapan Masuk Kampus Impian',
                 'price' => 850000,
-                'teachers_id' => $teacherData->teacher_id,
-                'category_id' => $kategori->id,
-                'start_date' => '2026-04-01',
-                'end_date' => '2026-12-31',
+            ],
+            [
+                'title' => 'SMA & SMP REGULER',
+                'description' => 'Bimbingan harian untuk siswa SMP dan SMA.',
+                'price' => 500000,
+            ],
+            [
+                'title' => 'SMA FAVORIT',
+                'description' => 'Persiapan masuk SMA Unggulan dan Favorit.',
+                'price' => 600000,
             ]
         ];
 
         foreach ($programs as $program) {
+            // Jika Anda mengganti nama tabel menjadi 'programs', pastikan model CourseClass
+            // memiliki properti: protected $table = 'programs';
             CourseClass::create($program);
         }
 
-        echo "Seeding Berhasil! Tabel 'classes' sudah terisi sesuai CDM.\n";
+        echo "Seeding Berhasil! Semua data awal termasuk 4 Program Kelas sudah masuk.\n";
     }
 }

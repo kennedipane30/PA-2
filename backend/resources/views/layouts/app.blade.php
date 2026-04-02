@@ -31,6 +31,13 @@
                             <button type="submit" class="btn btn-link nav-link">Logout</button>
                         </form>
                     </li>
+                    <!-- Menu Siswa -->
+<li class="nav-item">
+    <a href="{{ route('admin.siswa.index') }}">Semua Siswa</a>
+</li>
+<li class="nav-item">
+   <a href="{{ route('admin.siswa.pendaftaran') }}">Daftar Tunggu</a> 
+</li>
                 </ul>
             </div>
         </div>

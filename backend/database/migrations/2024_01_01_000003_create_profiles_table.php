@@ -6,21 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up(): void
-    {
-        Schema::create('profiles', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->string('nomor_wa')->nullable(); // HP Siswa - Encrypted
-            $table->text('alamat')->nullable(); // Encrypted
-            $table->string('nama_ibu')->nullable(); // Encrypted
-            $table->string('nomor_wa_ortu')->nullable(); // HP Orang Tua - Encrypted
-            $table->string('nomor_wa_ortu_2')->nullable(); // HP Orang Tua 2 - Encrypted
-            $table->string('foto')->nullable();
-            $table->date('tanggal_lahir')->nullable();
-            $table->timestamps();
-        });
-    }
+   public function up(): void
+{
+    Schema::create('profiles', function (Blueprint $table) {
+        $table->id(); // Ini ID untuk tabel profiles sendiri
+
+        // PENGHUBUNG KE TABEL USERS (Pastikan kolom user_id dibuat dulu baru foreign key-nya)
+        $table->unsignedBigInteger('user_id');
+        $table->foreign('user_id')->references('user_id')->on('users')->onDelete('cascade');
+
+        $table->string('nomor_wa')->nullable();
+        $table->text('alamat')->nullable();
+        $table->string('nama_ibu')->nullable();
+        $table->string('nomor_wa_ortu')->nullable();
+        $table->timestamps();
+    });
+}
 
     public function down(): void
     {

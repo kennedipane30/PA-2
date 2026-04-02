@@ -10,7 +10,9 @@ class Enrollment extends Model {
     {
         return $this->belongsTo(User::class, 'user_id', 'user_id');
     }
-
+    public function program() {
+        return $this->belongsTo(CourseClass::class, 'class_id', 'id');
+    }
     public function classModel()
     {
         return $this->belongsTo(ClassModel::class, 'class_id', 'class_id');

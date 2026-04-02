@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'class_detail_page.dart';
-import 'edit_profile_page.dart'; // <--- PASTIKAN IMPORT INI ADA
+import 'edit_profile_page.dart';
 
 class KelasPage extends StatelessWidget {
   final String token;
@@ -49,7 +49,8 @@ class KelasPage extends StatelessWidget {
         elevation: 0,
       ),
       body: ListView.builder(
-        padding: const EdgeInsets.all(20),
+        // PERBAIKAN: Tambah bottom padding (100) agar tidak tertutup navigasi bawah
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
         itemCount: programs.length,
         itemBuilder: (context, index) => _buildProgramCard(context, programs[index]),
       ),
@@ -59,10 +60,12 @@ class KelasPage extends StatelessWidget {
   void _checkProfileAndNavigate(BuildContext context, Map<String, dynamic> item) {
     var student = userData['student'];
 
-    // LOGIKA CEK: Jika data masih default "-" maka dianggap belum lengkap
-    bool isComplete = student['parent_name'] != "-" &&
-        student['school'] != "-" && // di edit_profil ini diisi oleh _alamatCtrl
-        student['wa_ortu'] != "-";
+    // LOGIKA CEK: Pastikan key sesuai dengan yang dikirim backend (parent_name, school, parent_phone)
+    bool isComplete = student != null &&
+        student['parent_name'] != null && student['parent_name'] != "-" &&
+        student['school'] != null && student['school'] != "-" &&
+        // Cek wa_ortu atau parent_phone (antisipasi perbedaan key di backend)
+        (student['wa_ortu'] != "-" || (student['parent_phone'] != null && student['parent_phone'] != "-"));
 
     if (isComplete) {
       Navigator.push(
@@ -102,9 +105,8 @@ class KelasPage extends StatelessWidget {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               onPressed: () async {
-                Navigator.pop(context); // Tutup dialog peringatan
+                Navigator.pop(context);
                 
-                // LANGSUNG ARAHKAN KE HALAMAN EDIT PROFIL
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -115,7 +117,6 @@ class KelasPage extends StatelessWidget {
                   ),
                 );
 
-                // Jika user kembali setelah berhasil simpan (result == true)
                 if (result == true) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text("Profil diperbarui! Silakan klik kembali kelas yang diinginkan."))
