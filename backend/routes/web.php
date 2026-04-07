@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Storage;
 // Import Semua Controller
 use App\Http\Controllers\WebAuthController;
 use App\Http\Controllers\Admin\{
-    DashboardController, // Gunakan DashboardController yang baru kita perbaiki
+    DashboardController,
     GaleriController,
     PembayaranController,
     PengumumanController,
@@ -38,7 +38,7 @@ Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
 // --- 1. GROUP ADMINISTRATOR (Role: admin) ---
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
 
-    // Dashboard Utama (Gunakan DashboardController yang baru)
+    // Dashboard Utama
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // MANAJEMEN SISWA
@@ -48,17 +48,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/verifikasi/{id}', [SiswaAdminController::class, 'verifikasi'])->name('verifikasi');
     });
 
-    // ALIAS UNTUK DASHBOARD (Agar link di Stats Card Berfungsi)
-    // Link "Menunggu Approval" di Dashboard diarahkan ke Daftar Tunggu Siswa
+    // ALIAS UNTUK DASHBOARD
     Route::get('/verifikasi-pendaftaran', [SiswaAdminController::class, 'daftarTunggu'])->name('verifikasi.index');
 
     // MANAJEMEN PENGAJAR
-    // Kita buat alias 'admin.pengajar.index' agar pas dengan link di Dashboard Card
     Route::get('/daftar-pengajar', [ManajemenPengajarController::class, 'index'])->name('pengajar.index');
     Route::resource('manajemen-pengajar', ManajemenPengajarController::class);
 
     // KEUANGAN / PENDAPATAN
-    // Alias 'admin.pendapatan.index' untuk link Card ke-4 di Dashboard
     Route::get('/laporan-pendapatan', [PembayaranController::class, 'index'])->name('pendapatan.index');
     Route::get('/pembayaran', [PembayaranController::class, 'index'])->name('pembayaran.index');
     Route::post('/pembayaran/verifikasi/{id}', [PembayaranController::class, 'verifikasi'])->name('pembayaran.verify');
@@ -78,13 +75,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('/check', [PembayaranController::class, 'checkPromo'])->name('check');
     });
 
-    // Manajemen Pengumuman
-    // Route::get('/pengumuman', [PengumumanController::class, 'index'])->name('pengumuman.index');
-    // Route::post('/pengumuman', [PengumumanController::class, 'store'])->name('pengumuman.store');
-    // Route::delete('/pengumuman/{id}', [PengumumanController::class, 'destroy'])->name('pengumuman.destroy');
-
     // Resource Routes
     Route::resource('galeri', GaleriController::class);
+
+    // --- BAGIAN JADWAL (MODIFIKASI DISINI) ---
+    // Route untuk mengambil materi via AJAX berdasarkan class_id
+    Route::get('/jadwal/get-materials/{class_id}', [JadwalController::class, 'getMaterials'])->name('jadwal.getMaterials');
     Route::resource('jadwal', JadwalController::class);
 });
 
@@ -102,7 +98,8 @@ Route::middleware(['auth', 'role:pengajar'])->prefix('pengajar')->name('pengajar
     Route::get('/soal-tryout', [TryoutController::class, 'buatSoal'])->name('tryout.create');
     Route::get('/nilai', [TryoutController::class, 'lihatNilai'])->name('tryout.nilai');
 
-        Route::get('/materi', [MateriController::class, 'index'])->name('materi.index');
+    // Route materi tambahan (sudah dicover resource di atas sebenarnya, tapi dibiarkan agar tidak mengganggu)
+    Route::get('/materi', [MateriController::class, 'index'])->name('materi.index');
     Route::post('/materi', [MateriController::class, 'store'])->name('materi.store');
     Route::delete('/materi/{id}', [MateriController::class, 'destroy'])->name('materi.destroy');
 });
